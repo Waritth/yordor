@@ -1,0 +1,136 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// Models follow docs/03_DATABASE_SCHEMA.md
+
+generator client {
+    provider = "prisma-client-js"
+    output   = "../generated/prisma"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+enum RoundStatus {
+    SETUP
+    PLAYING
+    FINISHED
+}
+
+enum BetMode {
+    TEAM // Best N round-robin
+    MATCH // 1-vs-1 (match-style หรือ stroke-style ตาม config)
+    STROKE // เดี่ยว round-robin
+    HIGHLOW // บ๊วยจ่ายหัว รายหลุม
+    // SKIN // roadmap
+}
+
+model Round {
+    id          String      @id @default(cuid())
+    accessToken String      @unique @default(cuid()) // ลิงก์ guest
+    name        String      @default("")
+    holeCount   Int         @default(18)
+    status      RoundStatus @default(SETUP)
+    createdAt   DateTime    @default(now())
+    updatedAt   DateTime    @updatedAt
+
+    holes   Hole[]
+    players Player[]
+    scores  Score[]
+    bets    Bet[]
+
+    @@index([accessToken])
+}
+
+model Hole {
+    id           String  @id @default(cuid())
+    roundId      String
+    index        Int // 0..holeCount-1
+    par          Int     @default(4) // 3 | 4 | 5
+    turboAllowed Boolean @default(false)
+    turboOn      Boolean @default(false)
+
+    round  Round   @relation(fields: [roundId], references: [id], onDelete: Cascade)
+    scores Score[]
+
+    @@unique([roundId, index])
+    @@index([roundId])
+}
+
+model Player {
+    id      String @id @default(cuid())
+    roundId String
+    name    String
+    color   String @default("#1B5E20")
+    hcpPar3 Float  @default(0)
+    hcpPar4 Float  @default(0)
+    hcpPar5 Float  @default(0)
+    order   Int    @default(0)
+
+    round      Round       @relation(fields: [roundId], references: [id], onDelete: Cascade)
+    scores     Score[]
+    betPlayers BetPlayer[]
+
+    @@index([roundId])
+}
+
+model Score {
+    id       String @id @default(cuid())
+    roundId  String
+    playerId String
+    holeId   String
+    strokes  Int // gross; ยังไม่กรอก = ไม่มี row (null = ไม่มีแถว)
+
+    round  Round  @relation(fields: [roundId], references: [id], onDelete: Cascade)
+    player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+    hole   Hole   @relation(fields: [holeId], references: [id], onDelete: Cascade)
+
+    @@unique([playerId, holeId])
+    @@index([roundId])
+    @@index([holeId])
+}
+
+model Bet {
+    id      String  @id @default(cuid())
+    roundId String
+    mode    BetMode
+    name    String  @default("")
+    config  Json    @default("{}") // shape ตามโหมด — ดู 03 §4
+    order   Int     @default(0)
+
+    round   Round       @relation(fields: [roundId], references: [id], onDelete: Cascade)
+    teams   Team[]
+    players BetPlayer[]
+
+    @@index([roundId])
+}
+
+model Team {
+    id    String @id @default(cuid())
+    betId String
+    name  String
+    color String @default("#1B5E20")
+    order Int    @default(0)
+
+    bet     Bet         @relation(fields: [betId], references: [id], onDelete: Cascade)
+    members BetPlayer[]
+
+    @@index([betId])
+}
+
+model BetPlayer {
+    id       String  @id @default(cuid())
+    betId    String
+    playerId String
+    teamId   String? // set เฉพาะ TEAM mode
+    side     String? // "A" | "B" เฉพาะ MATCH mode
+
+    bet    Bet    @relation(fields: [betId], references: [id], onDelete: Cascade)
+    player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+    team   Team?  @relation(fields: [teamId], references: [id], onDelete: SetNull)
+
+    @@unique([betId, playerId])
+    @@index([betId])
+    @@index([playerId])
+}

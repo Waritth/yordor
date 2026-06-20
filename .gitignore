@@ -1,0 +1,27 @@
+# deps
+node_modules/
+
+# build output
+.next/
+dist/
+out/
+build/
+
+# prisma generated client
+**/generated/
+
+# env
+.env
+.env*.local
+
+# logs / os
+*.log
+npm-debug.log*
+.DS_Store
+
+# editor
+.vscode/
+.idea/
+
+# claude code local overrides
+.claude/settings.local.json
