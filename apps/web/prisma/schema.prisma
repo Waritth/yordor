@@ -3,8 +3,9 @@
 // Models follow docs/03_DATABASE_SCHEMA.md
 
 generator client {
-    provider = "prisma-client-js"
-    output   = "../generated/prisma"
+    provider        = "prisma-client-js"
+    output          = "../generated/prisma"
+    previewFeatures = ["relationJoins"] // single-JOIN includes (fewer round-trips)
 }
 
 datasource db {

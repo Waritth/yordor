@@ -36,10 +36,12 @@ export const roundRouter = createTRPCRouter({
           name: input.name,
           holeCount: input.holeCount,
           holes: {
-            create: Array.from({ length: input.holeCount }, (_, index) => ({
-              index,
-              par: 4,
-            })),
+            createMany: {
+              data: Array.from({ length: input.holeCount }, (_, index) => ({
+                index,
+                par: 4,
+              })),
+            },
           },
           bets: {
             create: {
@@ -48,10 +50,12 @@ export const roundRouter = createTRPCRouter({
               order: 0,
               config: { bestN: 2, bonus: true, useTurbo: true },
               teams: {
-                create: [
-                  { name: "ทีม A", color: "#1B5E20", order: 0 },
-                  { name: "ทีม B", color: "#C9A227", order: 1 },
-                ],
+                createMany: {
+                  data: [
+                    { name: "ทีม A", color: "#1B5E20", order: 0 },
+                    { name: "ทีม B", color: "#C9A227", order: 1 },
+                  ],
+                },
               },
             },
           },
@@ -64,6 +68,7 @@ export const roundRouter = createTRPCRouter({
   get: roundProcedure.query(async ({ ctx }) => {
     const round = await ctx.db.round.findUnique({
       where: { id: ctx.round.id },
+      relationLoadStrategy: "join",
       include: roundInclude,
     });
     // ctx.round exists (middleware), so this is non-null.

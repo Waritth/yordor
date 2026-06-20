@@ -21,6 +21,7 @@ export const resultRouter = createTRPCRouter({
   get: roundProcedure.query(async ({ ctx }) => {
     const round = await ctx.db.round.findUnique({
       where: { id: ctx.round.id },
+      relationLoadStrategy: "join",
       include: roundInclude,
     });
     if (!round) return { teamResults: [] };
