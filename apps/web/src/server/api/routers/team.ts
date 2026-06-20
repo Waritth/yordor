@@ -1,6 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
+import { SLOTS_PER_TEAM } from "~/server/api/routers/round";
 import {
   createTRPCRouter,
   roundWriteProcedure,
@@ -38,6 +39,32 @@ export const teamRouter = createTRPCRouter({
         order: count,
       },
     });
+
+    // Seed empty player slots so the new team card matches the rest.
+    const last = await ctx.db.player.findFirst({
+      where: { roundId: ctx.round.id },
+      orderBy: { order: "desc" },
+      select: { order: true },
+    });
+    let order = (last?.order ?? -1) + 1;
+    await ctx.db.$transaction(
+      Array.from({ length: SLOTS_PER_TEAM }, () =>
+        ctx.db.betPlayer.create({
+          data: {
+            bet: { connect: { id: betId } },
+            team: { connect: { id: team.id } },
+            player: {
+              create: {
+                round: { connect: { id: ctx.round.id } },
+                name: "",
+                order: order++,
+              },
+            },
+          },
+        }),
+      ),
+    );
+
     await touchRound(ctx.db, ctx.round.id);
     return team;
   }),

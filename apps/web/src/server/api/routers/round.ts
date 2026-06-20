@@ -7,6 +7,9 @@ import {
   roundWriteProcedure,
 } from "~/server/api/trpc";
 
+/** Empty player slots seeded per team on create (ready to type — no extra clicks). */
+export const SLOTS_PER_TEAM = 2;
+
 /** Full round payload shared by round.get (and consumed by the engine adapter). */
 const roundInclude = {
   holes: { orderBy: { index: "asc" } },
@@ -50,19 +53,44 @@ export const roundRouter = createTRPCRouter({
               order: 0,
               config: { bestN: 2, bonus: true, useTurbo: true },
               teams: {
-                createMany: {
-                  data: [
-                    { name: "ทีม A", color: "#1B5E20", order: 0 },
-                    { name: "ทีม B", color: "#C9A227", order: 1 },
-                  ],
-                },
+                // nested create (not createMany) so we get the team ids back
+                create: [
+                  { name: "ทีม A", color: "#1B5E20", order: 0 },
+                  { name: "ทีม B", color: "#C9A227", order: 1 },
+                ],
               },
             },
           },
         },
-        select: { id: true, accessToken: true },
+        include: { bets: { include: { teams: { orderBy: { order: "asc" } } } } },
       });
-      return round;
+
+      // Pre-seed empty player slots in each team (ready to type, no extra clicks).
+      const bet = round.bets[0]!;
+      const seeds = [];
+      let order = 0;
+      for (const t of bet.teams) {
+        for (let k = 0; k < SLOTS_PER_TEAM; k++) {
+          seeds.push(
+            ctx.db.betPlayer.create({
+              data: {
+                bet: { connect: { id: bet.id } },
+                team: { connect: { id: t.id } },
+                player: {
+                  create: {
+                    round: { connect: { id: round.id } },
+                    name: "",
+                    order: order++,
+                  },
+                },
+              },
+            }),
+          );
+        }
+      }
+      await ctx.db.$transaction(seeds);
+
+      return { id: round.id, accessToken: round.accessToken };
     }),
 
   get: roundProcedure.query(async ({ ctx }) => {
