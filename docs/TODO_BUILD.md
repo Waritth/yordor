@@ -17,12 +17,12 @@
 - [ ] **เช็ค:** push → deploy เขียว, DB connect ได้  ← รอ steps ข้างบน
 
 ## P1 — Engine + Golden Test (Team)
-- [ ] `packages/engine`: `net()` (⚠️ `strokes − handicap`), `bonusMult()` (Albatross ×5), `turboMult()`
-- [ ] `teamRanked()` + `computeTeam()` ตาม `02` §4
-- [ ] ตั้ง test runner (vitest) ใน `packages/engine`
-- [ ] เขียน golden test: `07` §1, §2, §3 (unit), §4.1, §4.2 (Team)
-- [ ] เขียน invariant test: zero-sum, matrix↔totals, determinism (`07` §9)
-- [ ] **เช็ค:** test เขียวครบ + invariants ผ่าน
+- [x] `packages/engine`: `net()` (⚠️ `strokes − handicap`), `bonusMult()` (Albatross ×5), `turboMult()`
+- [x] `teamRanked()` + `computeTeam()` ตาม `02` §4
+- [x] ตั้ง test runner (vitest) ใน `packages/engine`
+- [x] เขียน golden test: `07` §1, §2, §3 (unit), §4.1, §4.2 (Team) — รวม 4.3/4.4
+- [x] เขียน invariant test: zero-sum, matrix↔totals, determinism (`07` §9) — 50 random rounds + null-safety + tie
+- [x] **เช็ค:** test เขียวครบ + invariants ผ่าน (73 tests green)
 
 ## P2 — Team Mode End-to-End (single device)
 - [ ] tRPC: `round.create`, `round.get`
@@ -95,5 +95,5 @@
 ---
 
 ## หนี้/บัคที่รู้แล้ว
-- [ ] **prototype bug:** `golf-team-mode.jsx` ใช้ `net = strokes + handicap` → ต้องเป็น `−` (จับด้วย golden test `07` §1)
+- [x] **prototype bug:** `golf-team-mode.jsx` ใช้ `net = strokes + handicap` → ต้องเป็น `−` (แก้แล้วใน `packages/engine/src/net.ts`, จับด้วย golden test `07` §1)
 - [ ] ตัดสิน: บ๊วยจ่ายหัว ฐาน net หรือ gross (default net) — ยืนยันก่อน P7
