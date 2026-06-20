@@ -1,3 +1,4 @@
+import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
 import {
@@ -7,11 +8,13 @@ import {
 } from "~/server/api/trpc";
 
 export const playerRouter = createTRPCRouter({
+  // Optionally assign the new player straight into a team (one round-trip).
   add: roundWriteProcedure
     .input(
       z.object({
-        name: z.string().min(1).max(40),
+        name: z.string().max(40).default(""),
         color: z.string().default("#1B5E20"),
+        teamId: z.string().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -20,12 +23,28 @@ export const playerRouter = createTRPCRouter({
         orderBy: { order: "desc" },
         select: { order: true },
       });
+
+      let betId: string | undefined;
+      if (input.teamId) {
+        const team = await ctx.db.team.findUnique({
+          where: { id: input.teamId },
+          include: { bet: { select: { id: true, roundId: true } } },
+        });
+        if (!team || team.bet.roundId !== ctx.round.id) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "ไม่พบทีม" });
+        }
+        betId = team.bet.id;
+      }
+
       const player = await ctx.db.player.create({
         data: {
           roundId: ctx.round.id,
           name: input.name,
           color: input.color,
           order: (last?.order ?? -1) + 1,
+          ...(betId && input.teamId
+            ? { betPlayers: { create: { betId, teamId: input.teamId } } }
+            : {}),
         },
       });
       await touchRound(ctx.db, ctx.round.id);
@@ -41,7 +60,7 @@ export const playerRouter = createTRPCRouter({
     }),
 
   rename: roundWriteProcedure
-    .input(z.object({ playerId: z.string(), name: z.string().min(1).max(40) }))
+    .input(z.object({ playerId: z.string(), name: z.string().max(40) }))
     .mutation(async ({ ctx, input }) => {
       await ctx.db.player.update({
         where: { id: input.playerId },

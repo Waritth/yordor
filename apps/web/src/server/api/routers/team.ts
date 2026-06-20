@@ -7,11 +7,84 @@ import {
   touchRound,
 } from "~/server/api/trpc";
 
+const TEAM_COLORS = [
+  "#1B5E20",
+  "#C9A227",
+  "#1565C0",
+  "#6A1B9A",
+  "#C62828",
+  "#00838F",
+];
+
 /**
- * P2 team assignment for the round's single TEAM bet.
+ * P2 team management + assignment for the round's single TEAM bet.
  * P4 replaces this with the generic bet.setParticipants across multiple bets.
  */
 export const teamRouter = createTRPCRouter({
+  create: roundWriteProcedure.mutation(async ({ ctx }) => {
+    const bet = await ctx.db.bet.findFirst({
+      where: { roundId: ctx.round.id, mode: "TEAM" },
+      orderBy: { order: "asc" },
+      select: { id: true },
+    });
+    const betId = bet?.id;
+    if (!betId) throw new TRPCError({ code: "NOT_FOUND", message: "ไม่พบเดิมพันทีม" });
+    const count = await ctx.db.team.count({ where: { betId } });
+    const team = await ctx.db.team.create({
+      data: {
+        betId,
+        name: `ทีม ${String.fromCharCode(65 + count)}`,
+        color: TEAM_COLORS[count % TEAM_COLORS.length]!,
+        order: count,
+      },
+    });
+    await touchRound(ctx.db, ctx.round.id);
+    return team;
+  }),
+
+  rename: roundWriteProcedure
+    .input(z.object({ teamId: z.string(), name: z.string().min(1).max(40) }))
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db.team.update({
+        where: { id: input.teamId },
+        data: { name: input.name },
+      });
+      await touchRound(ctx.db, ctx.round.id);
+      return { ok: true as const };
+    }),
+
+  // Removing a team also deletes its member players (team-card model).
+  remove: roundWriteProcedure
+    .input(z.object({ teamId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const bet = await ctx.db.bet.findFirst({
+        where: { roundId: ctx.round.id, mode: "TEAM" },
+        orderBy: { order: "asc" },
+        select: { id: true },
+      });
+      const betId = bet?.id;
+      if (!betId) return { ok: true as const };
+      const count = await ctx.db.team.count({ where: { betId } });
+      if (count <= 2) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "ต้องมีอย่างน้อย 2 ทีม",
+        });
+      }
+      const members = await ctx.db.betPlayer.findMany({
+        where: { betId, teamId: input.teamId },
+        select: { playerId: true },
+      });
+      await ctx.db.$transaction([
+        ctx.db.player.deleteMany({
+          where: { id: { in: members.map((m) => m.playerId) } },
+        }),
+        ctx.db.team.delete({ where: { id: input.teamId } }),
+      ]);
+      await touchRound(ctx.db, ctx.round.id);
+      return { ok: true as const };
+    }),
+
   assign: roundWriteProcedure
     .input(z.object({ playerId: z.string(), teamId: z.string() }))
     .mutation(async ({ ctx, input }) => {

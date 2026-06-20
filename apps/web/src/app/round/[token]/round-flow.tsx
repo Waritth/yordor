@@ -6,18 +6,14 @@ import { useState } from "react";
 import { cx } from "~/app/_ui";
 import { api, type RouterOutputs } from "~/trpc/react";
 
-import { HandicapStep } from "./_steps/handicap";
 import { PlayStep } from "./_steps/play";
 import { ResultStep } from "./_steps/result";
 import { SetupStep } from "./_steps/setup";
-import { TeamsStep } from "./_steps/teams";
 
 export type RoundData = NonNullable<RouterOutputs["round"]["get"]>;
 
 const STEPS = [
   { key: "setup", label: "ตั้งค่า" },
-  { key: "handicap", label: "แต้มต่อ" },
-  { key: "teams", label: "ทีม" },
   { key: "play", label: "เล่น" },
   { key: "result", label: "ผล" },
 ] as const;
@@ -72,27 +68,7 @@ export function RoundFlow({ token }: { token: string }) {
       </nav>
 
       {step === "setup" && (
-        <SetupStep
-          token={token}
-          round={round}
-          onNext={() => setStep("handicap")}
-        />
-      )}
-      {step === "handicap" && (
-        <HandicapStep
-          token={token}
-          round={round}
-          onBack={() => setStep("setup")}
-          onNext={() => setStep("teams")}
-        />
-      )}
-      {step === "teams" && (
-        <TeamsStep
-          token={token}
-          round={round}
-          onBack={() => setStep("handicap")}
-          onNext={() => setStep("play")}
-        />
+        <SetupStep token={token} round={round} onNext={() => setStep("play")} />
       )}
       {step === "play" && (
         <PlayStep
