@@ -1,17 +1,22 @@
-import {
-  createCallerFactory,
-  createTRPCRouter,
-  publicProcedure,
-} from "~/server/api/trpc";
+import { holeRouter } from "~/server/api/routers/hole";
+import { playerRouter } from "~/server/api/routers/player";
+import { resultRouter } from "~/server/api/routers/result";
+import { roundRouter } from "~/server/api/routers/round";
+import { scoreRouter } from "~/server/api/routers/score";
+import { teamRouter } from "~/server/api/routers/team";
+import { createCallerFactory, createTRPCRouter } from "~/server/api/trpc";
 
 /**
- * This is the primary router for your server.
- *
- * All routers added in /api/routers should be manually added here.
- * Real routers (round, player, hole, score, result, bet) are added from P2 onward.
+ * Primary tRPC router. P2 = Team mode end-to-end.
+ * (bet.* generic CRUD + realtime round.live arrive in P3/P4.)
  */
 export const appRouter = createTRPCRouter({
-  health: publicProcedure.query(() => ({ ok: true })),
+  round: roundRouter,
+  player: playerRouter,
+  hole: holeRouter,
+  score: scoreRouter,
+  team: teamRouter,
+  result: resultRouter,
 });
 
 // export type definition of API

@@ -6,9 +6,9 @@
  * TL;DR - This is where all the tRPC server stuff is created and plugged in. The pieces you will
  * need to use are documented accordingly near the end.
  */
-import { initTRPC } from "@trpc/server";
+import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
-import { ZodError } from "zod";
+import { z, ZodError } from "zod";
 
 import { db } from "~/server/db";
 
@@ -104,3 +104,41 @@ const timingMiddleware = t.middleware(async ({ next, path }) => {
  * are logged in.
  */
 export const publicProcedure = t.procedure.use(timingMiddleware);
+
+/**
+ * Round procedure — authz via accessToken (docs/04 §2).
+ * Resolves `token` → the Round and injects it into ctx. No user session.
+ */
+export const roundProcedure = publicProcedure
+  .input(z.object({ token: z.string().min(1) }))
+  .use(async ({ ctx, input, next }) => {
+    const round = await ctx.db.round.findUnique({
+      where: { accessToken: input.token },
+    });
+    if (!round) throw new TRPCError({ code: "NOT_FOUND" });
+    return next({ ctx: { ...ctx, round } });
+  });
+
+/**
+ * Write variant — same as roundProcedure but blocks mutations on a FINISHED
+ * round (docs/04 §8). Unlock via round.setStatus.
+ */
+export const roundWriteProcedure = roundProcedure.use(({ ctx, next }) => {
+  if (ctx.round.status === "FINISHED") {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "รอบนี้จบแล้ว (ปลดล็อกด้วยการเปลี่ยนสถานะก่อนแก้)",
+    });
+  }
+  return next();
+});
+
+/** Bump Round.updatedAt — invalidation signal for live/poll (docs/04 §1). */
+export const touchRound = (
+  database: typeof db,
+  roundId: string,
+): Promise<unknown> =>
+  database.round.update({
+    where: { id: roundId },
+    data: { updatedAt: new Date() },
+  });
