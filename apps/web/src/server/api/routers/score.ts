@@ -58,11 +58,26 @@ export const scoreRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      await ctx.db.$transaction(async (tx) => {
-        for (const c of input.cells) {
-          await setCell(tx, ctx.round.id, c.playerId, c.holeId, c.strokes);
-        }
-      });
+      if (input.cells.length === 0) return { ok: true as const };
+      // Rewrite all addressed cells atomically in 2 statements (delete-then-create)
+      // — avoids per-cell round-trips that blow the interactive-tx timeout on a
+      // remote proxy. last-write-wins per (playerId, holeId).
+      const pairs = input.cells.map((c) => ({
+        playerId: c.playerId,
+        holeId: c.holeId,
+      }));
+      const inserts = input.cells
+        .filter((c) => c.strokes !== null)
+        .map((c) => ({
+          roundId: ctx.round.id,
+          playerId: c.playerId,
+          holeId: c.holeId,
+          strokes: c.strokes!,
+        }));
+      await ctx.db.$transaction([
+        ctx.db.score.deleteMany({ where: { OR: pairs } }),
+        ctx.db.score.createMany({ data: inserts }),
+      ]);
       await touchRound(ctx.db, ctx.round.id);
       return { ok: true as const };
     }),

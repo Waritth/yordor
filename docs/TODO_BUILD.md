@@ -9,12 +9,12 @@
 ## P0 — Foundation
 - [x] สร้างโปรเจกต์ T3 (`create-t3-app`): Next.js App Router + tRPC v11 + Prisma + TypeScript + Tailwind
 - [x] ตั้ง monorepo: `apps/web` + `packages/engine`
-- [ ] สร้าง Postgres บน Railway + ใส่ `DATABASE_URL` ใน env  ← ต้องใช้บัญชี Railway (รอทำ)
+- [x] สร้าง Postgres บน Railway + ใส่ `DATABASE_URL` ใน env (public proxy)
 - [x] วาง `schema.prisma` ตาม `03_DATABASE_SCHEMA.md` (Round, Hole, Player, Score, Bet, Team, BetPlayer + enums)
-- [ ] `prisma migrate dev` migration แรกผ่าน  ← รอ DATABASE_URL จริง
+- [x] `prisma migrate dev` migration แรกผ่าน (`20260620172638_init`)
 - [x] ตั้ง CI: typecheck + test (GitHub Actions) — `.github/workflows/ci.yml`
-- [ ] deploy ขึ้น Railway, เปิดหน้าเปล่าได้  ← รอ push + Railway
-- [ ] **เช็ค:** push → deploy เขียว, DB connect ได้  ← รอ steps ข้างบน
+- [ ] deploy ขึ้น Railway, เปิดหน้าเปล่าได้  ← รอ deploy web service
+- [~] **เช็ค:** push → deploy เขียว, DB connect ได้  (push ✅ + DB connect ✅; deploy ยังไม่ทำ)
 
 ## P1 — Engine + Golden Test (Team)
 - [x] `packages/engine`: `net()` (⚠️ `strokes − handicap`), `bonusMult()` (Albatross ×5), `turboMult()`
@@ -25,18 +25,18 @@
 - [x] **เช็ค:** test เขียวครบ + invariants ผ่าน (73 tests green)
 
 ## P2 — Team Mode End-to-End (single device)
-- [ ] tRPC: `round.create`, `round.get`
-- [ ] tRPC: `player.add/remove/rename/setColor/setHandicap`
-- [ ] tRPC: `hole.setPar/setTurbo`
-- [ ] tRPC: `score.set/setMany`
-- [ ] tRPC: `result.get` (เรียก engine)
-- [ ] UI: หน้าแรก (สร้างรอบ) → `05` §2
-- [ ] UI: setup (หลุม + รายชื่อผู้เล่น) → `05` §3
-- [ ] UI: handicap → `05` §4
-- [ ] UI: play per-hole + breakdown → `05` §6
-- [ ] UI: result (ตารางทีม + matrix + รายหลุม) → `05` §8
-- [ ] เชื่อม engine preview ฝั่ง client
-- [ ] **เช็ค:** เล่น 18 หลุม 2 ทีมจบ, reload ข้อมูลอยู่, matrix ถูก
+- [x] tRPC: `round.create`, `round.get`
+- [x] tRPC: `player.add/remove/rename/setColor/setHandicap`
+- [x] tRPC: `hole.setPar/setTurbo`
+- [x] tRPC: `score.set/setMany`
+- [x] tRPC: `result.get` (เรียก engine)
+- [x] UI: หน้าแรก (สร้างรอบ) → `05` §2
+- [x] UI: setup (หลุม + รายชื่อผู้เล่น) → `05` §3
+- [x] UI: handicap → `05` §4
+- [x] UI: play per-hole + breakdown → `05` §6
+- [x] UI: result (ตารางทีม + matrix + รายหลุม) → `05` §8
+- [x] เชื่อม engine preview ฝั่ง client
+- [x] **เช็ค:** เล่น 18 หลุม 2 ทีมจบ, reload ข้อมูลอยู่, matrix ถูก (E2E ผ่านกับ Railway DB)
 
 ## P3 — Sync + Share ★ MVP LAUNCH (Team only)
 - [ ] `accessToken` flow + route `/round/{token}`
