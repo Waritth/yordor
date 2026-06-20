@@ -7,14 +7,14 @@
 ---
 
 ## P0 — Foundation
-- [ ] สร้างโปรเจกต์ T3 (`create-t3-app`): Next.js App Router + tRPC v11 + Prisma + TypeScript + Tailwind
-- [ ] ตั้ง monorepo: `apps/web` + `packages/engine`
-- [ ] สร้าง Postgres บน Railway + ใส่ `DATABASE_URL` ใน env
-- [ ] วาง `schema.prisma` ตาม `03_DATABASE_SCHEMA.md` (Round, Hole, Player, Score, Bet, Team, BetPlayer + enums)
-- [ ] `prisma migrate dev` migration แรกผ่าน
-- [ ] ตั้ง CI: typecheck + test (GitHub Actions หรือ Railway check)
-- [ ] deploy ขึ้น Railway, เปิดหน้าเปล่าได้
-- [ ] **เช็ค:** push → deploy เขียว, DB connect ได้
+- [x] สร้างโปรเจกต์ T3 (`create-t3-app`): Next.js App Router + tRPC v11 + Prisma + TypeScript + Tailwind
+- [x] ตั้ง monorepo: `apps/web` + `packages/engine`
+- [ ] สร้าง Postgres บน Railway + ใส่ `DATABASE_URL` ใน env  ← ต้องใช้บัญชี Railway (รอทำ)
+- [x] วาง `schema.prisma` ตาม `03_DATABASE_SCHEMA.md` (Round, Hole, Player, Score, Bet, Team, BetPlayer + enums)
+- [ ] `prisma migrate dev` migration แรกผ่าน  ← รอ DATABASE_URL จริง
+- [x] ตั้ง CI: typecheck + test (GitHub Actions) — `.github/workflows/ci.yml`
+- [ ] deploy ขึ้น Railway, เปิดหน้าเปล่าได้  ← รอ push + Railway
+- [ ] **เช็ค:** push → deploy เขียว, DB connect ได้  ← รอ steps ข้างบน
 
 ## P1 — Engine + Golden Test (Team)
 - [ ] `packages/engine`: `net()` (⚠️ `strokes − handicap`), `bonusMult()` (Albatross ×5), `turboMult()`
