@@ -103,15 +103,21 @@ export function computeTeam(
               winner: null,
               netA: aNet,
               netB: bNet,
+              nameA: a?.player.name ?? null,
+              nameB: b?.player.name ?? null,
+              grossA: a?.gross ?? null,
+              grossB: b?.gross ?? null,
               pts: 0,
               bonus: null,
+              bonusMult: 1,
               turbo: hole.turbo,
             });
             continue;
           }
 
           const winnerGross = r === 1 ? a.gross : b.gross;
-          const pts = 1 * bonusMult(winnerGross, hole.par) * mult;
+          const bMult = bonusMult(winnerGross, hole.par);
+          const pts = 1 * bMult * mult;
 
           if (r === 1) {
             matrix[B.id]![A.id]! += pts;
@@ -130,8 +136,13 @@ export function computeTeam(
             winner: r === 1 ? A.id : B.id,
             netA: aNet,
             netB: bNet,
+            nameA: a.player.name ?? null,
+            nameB: b.player.name ?? null,
+            grossA: a.gross,
+            grossB: b.gross,
             pts,
             bonus: bonusLabel(winnerGross, hole.par),
+            bonusMult: bMult,
             turbo: hole.turbo,
           });
         }

@@ -53,8 +53,15 @@ export interface GameLog {
   winner: string | null;
   netA: number | null;
   netB: number | null;
+  /** the ranked player's name on each side (for breakdown display) */
+  nameA: string | null;
+  nameB: string | null;
+  grossA: number | null;
+  grossB: number | null;
   pts: number;
+  /** bonus label (Birdie/Eagle/Albatross) + its multiplier */
   bonus: string | null;
+  bonusMult: number;
   turbo: boolean;
 }
 

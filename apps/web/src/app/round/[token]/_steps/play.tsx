@@ -9,6 +9,7 @@ import { buildTeamInput, teamBets } from "~/lib/team-input";
 import { api } from "~/trpc/react";
 
 import type { RoundData } from "../round-flow";
+import { HoleBreakdown } from "./hole-breakdown";
 
 export function PlayStep({
   token,
@@ -49,9 +50,7 @@ export function PlayStep({
   const preview = bet
     ? computeTeam(...inputTuple(round, bet))
     : null;
-  const teamName = (id: string) =>
-    bet?.teams.find((t) => t.id === id)?.name ?? id;
-  const games = preview?.holeLog[idx]?.games.filter((g) => g.pts > 0) ?? [];
+  const holeDetail = preview?.holeLog[idx];
 
   const commitScore = (playerId: string, raw: string) => {
     const trimmed = raw.trim();
@@ -199,20 +198,9 @@ export function PlayStep({
               </span>
             ))}
           </div>
-          {open && (
-            <div className="space-y-1 border-t border-black/5 pt-2 text-xs text-black/60">
-              {games.length === 0 && <p>หลุมนี้ยังไม่มีแต้ม</p>}
-              {games.map((g, i) => (
-                <p key={i}>
-                  Best{g.rank + 1}:{" "}
-                  <span className="font-semibold">
-                    {teamName(g.winner!)}
-                  </span>{" "}
-                  ชนะ +{g.pts}
-                  {g.bonus ? ` (${g.bonus})` : ""}
-                  {g.turbo ? " ⚡" : ""}
-                </p>
-              ))}
+          {open && holeDetail && (
+            <div className="border-t border-black/5 pt-2">
+              <HoleBreakdown detail={holeDetail} teams={bet.teams} />
             </div>
           )}
         </Card>

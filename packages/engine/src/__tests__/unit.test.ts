@@ -4,11 +4,11 @@ import { bonusLabel, bonusMult, net, turboMult } from "../index";
 import type { Par } from "../index";
 import { pl } from "./helpers";
 
-describe("§1 net = gross − handicap[par]", () => {
-  it("par5 gross7 hcp2 → 5", () => expect(net(7, pl("p", { 5: 2 }), 5)).toBe(5));
+describe("§1 net = gross + handicap[par]", () => {
+  it("par5 gross7 hcp2 → 9", () => expect(net(7, pl("p", { 5: 2 }), 5)).toBe(9));
   it("par4 gross4 hcp0 → 4", () => expect(net(4, pl("p"), 4)).toBe(4));
-  it("par3 gross5 hcp0.5 → 4.5", () =>
-    expect(net(5, pl("p", { 3: 0.5 }), 3)).toBe(4.5));
+  it("par3 gross5 hcp0.5 → 5.5", () =>
+    expect(net(5, pl("p", { 3: 0.5 }), 3)).toBe(5.5));
   it("null → null", () => expect(net(null, pl("p", { 4: 1 }), 4)).toBeNull());
 });
 

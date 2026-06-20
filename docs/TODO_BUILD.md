@@ -95,5 +95,5 @@
 ---
 
 ## หนี้/บัคที่รู้แล้ว
-- [x] **prototype bug:** `golf-team-mode.jsx` ใช้ `net = strokes + handicap` → ต้องเป็น `−` (แก้แล้วใน `packages/engine/src/net.ts`, จับด้วย golden test `07` §1)
+- [x] ~~prototype bug net `+`~~ → **ยืนยันแล้วว่า `+` ถูกต้อง** ตามที่ก๊วนเล่นจริง (เอกสารเดิมตีความผิด) — `packages/engine/src/net.ts` ใช้ `strokes + handicap`, golden test `07` §1 อัปเดตแล้ว
 - [ ] ตัดสิน: บ๊วยจ่ายหัว ฐาน net หรือ gross (default net) — ยืนยันก่อน P7

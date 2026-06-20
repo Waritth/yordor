@@ -1,9 +1,9 @@
 import type { Par, Player, Scores } from "./types";
 
 /**
- * Net score = gross − handicap[par].
- * ⚠️ Prototype used `+` (golf-team-mode.jsx:18) — spec §1 mandates `−`:
- * "ต่อ" ช่วยคนตีอ่อน → หัก handicap ออก → net ต่ำลง = ได้เปรียบ.
+ * Net score = gross + handicap[par].
+ * The group plays with "ต่อ" ADDED to net (matches golf-team-mode.jsx:18).
+ * Lower net wins, so handicap is a stroke allowance added to the player's score.
  * Returns null (⊘) when strokes is null/undefined. net can be fractional.
  */
 export function net(
@@ -12,7 +12,7 @@ export function net(
   par: Par,
 ): number | null {
   if (strokes == null) return null;
-  return strokes - player.handicap[par];
+  return strokes + player.handicap[par];
 }
 
 /** Read scores[playerId][holeIndex] safely → number | null. */

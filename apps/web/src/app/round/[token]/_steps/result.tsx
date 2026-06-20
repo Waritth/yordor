@@ -6,6 +6,7 @@ import { Button, Card, Section, cx } from "~/app/_ui";
 import { api } from "~/trpc/react";
 
 import type { RoundData } from "../round-flow";
+import { HoleBreakdown } from "./hole-breakdown";
 
 export function ResultStep({
   token,
@@ -23,7 +24,7 @@ export function ResultStep({
   });
 
   const [copied, setCopied] = useState(false);
-  const [openLog, setOpenLog] = useState(false);
+  const [openHole, setOpenHole] = useState<number | null>(null);
 
   const share = () => {
     const url = `${window.location.origin}/round/${token}`;
@@ -107,46 +108,50 @@ export function ResultStep({
         })}
       </Section>
 
-      {/* per-hole log */}
+      {/* per-hole log — tap a hole to expand the Best1/Best2 breakdown */}
       {teamResults[0] && (
-        <Section title="วิธีคิดรายหลุม">
-          <Card>
-            <button
-              onClick={() => setOpenLog((o) => !o)}
-              className="text-sm text-[#1B5E20]"
-            >
-              {openLog ? "ซ่อน" : "กางดูรายหลุม ▾"}
-            </button>
-            {openLog && (
-              <div className="mt-2 space-y-1.5 text-xs text-black/60">
-                {teamResults[0].holeLog.map((h) => {
-                  const games = h.games.filter((g) => g.pts > 0);
-                  return (
-                    <div key={h.holeIndex} className="flex gap-2">
-                      <span className="w-14 shrink-0 text-black/40">
-                        หลุม {h.holeIndex + 1} · P{h.par}
-                        {h.turbo ? " ⚡" : ""}
+        <Section title="วิธีคิดรายหลุม" subtitle="แตะหลุมเพื่อกางดู">
+          <div className="space-y-1.5">
+            {teamResults[0].holeLog.map((h) => {
+              const pts = h.games.reduce((s, g) => s + g.pts, 0);
+              const open = openHole === h.holeIndex;
+              return (
+                <Card key={h.holeIndex} className="p-0">
+                  <button
+                    onClick={() => setOpenHole(open ? null : h.holeIndex)}
+                    className="flex w-full items-center justify-between px-3 py-2.5 text-sm"
+                  >
+                    <span className="font-semibold text-black/70">
+                      หลุม {h.holeIndex + 1}{" "}
+                      <span className="font-normal text-black/40">
+                        · Par {h.par}
+                        {h.turbo ? " · ⚡×2" : ""}
                       </span>
-                      <span className="flex-1">
-                        {games.length === 0
-                          ? "—"
-                          : games
-                              .map(
-                                (g) =>
-                                  `B${g.rank + 1} ${
-                                    teamResults[0]!.teams.find(
-                                      (t) => t.id === g.winner,
-                                    )?.name ?? ""
-                                  } +${g.pts}${g.bonus ? ` ${g.bonus}` : ""}`,
-                              )
-                              .join(" · ")}
+                    </span>
+                    <span className="flex items-center gap-2 text-black/40">
+                      <span>{pts} pt</span>
+                      <span
+                        className={cx(
+                          "transition",
+                          open ? "rotate-180" : "",
+                        )}
+                      >
+                        ⌄
                       </span>
+                    </span>
+                  </button>
+                  {open && (
+                    <div className="border-t border-black/5 p-3">
+                      <HoleBreakdown
+                        detail={h}
+                        teams={teamResults[0]!.teams}
+                      />
                     </div>
-                  );
-                })}
-              </div>
-            )}
-          </Card>
+                  )}
+                </Card>
+              );
+            })}
+          </div>
         </Section>
       )}
 

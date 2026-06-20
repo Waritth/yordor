@@ -81,7 +81,7 @@ export function SetupStep({
 
       <Section
         title="ทีม · ผู้เล่น · แต้มต่อ"
-        subtitle="net = สกอร์จริง − แต้มต่อ · ต่อเยอะ = ได้เปรียบ"
+        subtitle="net = สกอร์จริง + แต้มต่อ (ต่อ = บวกเข้า net)"
       >
         <div className="space-y-3">
           {teams.map((t) => {
