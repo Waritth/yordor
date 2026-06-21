@@ -13,8 +13,8 @@
 - [x] วาง `schema.prisma` ตาม `03_DATABASE_SCHEMA.md` (Round, Hole, Player, Score, Bet, Team, BetPlayer + enums)
 - [x] `prisma migrate dev` migration แรกผ่าน (`20260620172638_init`)
 - [x] ตั้ง CI: typecheck + test (GitHub Actions) — `.github/workflows/ci.yml`
-- [ ] deploy ขึ้น Railway, เปิดหน้าเปล่าได้  ← รอ deploy web service
-- [~] **เช็ค:** push → deploy เขียว, DB connect ได้  (push ✅ + DB connect ✅; deploy ยังไม่ทำ)
+- [x] deploy ขึ้น Railway, เปิดหน้าเปล่าได้ (yordor-production.up.railway.app)
+- [x] **เช็ค:** push → deploy เขียว, DB connect ได้ (web + DB อยู่ Singapore region เดียวกัน → เร็ว)
 
 ## P1 — Engine + Golden Test (Team)
 - [x] `packages/engine`: `net()` (⚠️ `strokes − handicap`), `bonusMult()` (Albatross ×5), `turboMult()`
