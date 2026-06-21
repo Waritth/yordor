@@ -1,5 +1,6 @@
 "use client";
 
+import { useIsMutating } from "@tanstack/react-query";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -20,10 +21,31 @@ const STEPS = [
 export type StepKey = (typeof STEPS)[number]["key"];
 
 export function RoundFlow({ token }: { token: string }) {
-  const { data: round, isLoading } = api.round.get.useQuery({ token });
+  const utils = api.useUtils();
+  const roundQuery = api.round.get.useQuery(
+    { token },
+    { refetchInterval: 5000 }, // polling fallback if SSE drops (docs/04 §6)
+  );
+  const round = roundQuery.data;
   const [step, setStep] = useState<StepKey>("setup");
 
-  if (isLoading) {
+  // Live updates over SSE → refetch on change.
+  api.round.live.useSubscription(
+    { token },
+    {
+      onData: () => {
+        void utils.round.get.invalidate({ token });
+        void utils.result.get.invalidate({ token });
+      },
+      onError: () => {
+        /* SSE hiccup — polling fallback covers it */
+      },
+    },
+  );
+
+  const syncing = useIsMutating() > 0 || roundQuery.isRefetching;
+
+  if (roundQuery.isLoading) {
     return <Centered>กำลังโหลด…</Centered>;
   }
   if (!round) {
@@ -41,12 +63,23 @@ export function RoundFlow({ token }: { token: string }) {
 
   return (
     <main className="mx-auto min-h-screen max-w-md bg-[#F7F5EF] px-4 pb-16 pt-4">
-      <div className="mb-4 flex items-center justify-between">
-        <Link href="/" className="text-sm text-black/40">
+      <div className="mb-4 flex items-center justify-between gap-2">
+        <Link href="/" className="shrink-0 text-sm text-black/40">
           ⛳ YorDor
         </Link>
-        <span className="truncate text-sm font-semibold text-[#1B5E20]">
-          {round.name || "รอบไม่มีชื่อ"}
+        <span className="flex min-w-0 items-center gap-2">
+          <span className="truncate text-sm font-semibold text-[#1B5E20]">
+            {round.name || "รอบไม่มีชื่อ"}
+          </span>
+          <span className="flex shrink-0 items-center gap-1 text-[11px] text-black/40">
+            <span
+              className={cx(
+                "h-2 w-2 rounded-full",
+                syncing ? "animate-pulse bg-amber-400" : "bg-green-500",
+              )}
+            />
+            {syncing ? "ซิงก์…" : "ซิงก์แล้ว"}
+          </span>
         </span>
       </div>
 

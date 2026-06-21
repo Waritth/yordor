@@ -1,3 +1,4 @@
+import { observable } from "@trpc/server/observable";
 import { z } from "zod";
 
 import {
@@ -5,7 +6,9 @@ import {
   publicProcedure,
   roundProcedure,
   roundWriteProcedure,
+  touchRound,
 } from "~/server/api/trpc";
+import { roundEvents } from "~/server/events";
 
 /** Empty player slots seeded per team on create (ready to type — no extra clicks). */
 export const SLOTS_PER_TEAM = 2;
@@ -93,6 +96,15 @@ export const roundRouter = createTRPCRouter({
       return { id: round.id, accessToken: round.accessToken };
     }),
 
+  // Live changes over SSE (docs/04 §6). Polling is the fallback (client side).
+  live: roundProcedure.subscription(({ ctx }) =>
+    observable<{ updatedAt: Date }>((emit) => {
+      return roundEvents.subscribe(ctx.round.id, (updatedAt) =>
+        emit.next({ updatedAt }),
+      );
+    }),
+  ),
+
   get: roundProcedure.query(async ({ ctx }) => {
     const round = await ctx.db.round.findUnique({
       where: { id: ctx.round.id },
@@ -110,6 +122,7 @@ export const roundRouter = createTRPCRouter({
         where: { id: ctx.round.id },
         data: { name: input.name },
       });
+      await touchRound(ctx.db, ctx.round.id);
       return { ok: true as const };
     }),
 
@@ -120,6 +133,7 @@ export const roundRouter = createTRPCRouter({
         where: { id: ctx.round.id },
         data: { status: input.status },
       });
+      await touchRound(ctx.db, ctx.round.id);
       return { ok: true as const };
     }),
 

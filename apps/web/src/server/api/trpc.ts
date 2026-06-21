@@ -11,6 +11,7 @@ import superjson from "superjson";
 import { z, ZodError } from "zod";
 
 import { db } from "~/server/db";
+import { roundEvents } from "~/server/events";
 
 /**
  * 1. CONTEXT
@@ -127,12 +128,15 @@ export const roundWriteProcedure = roundProcedure.use(({ ctx, next }) => {
   return next();
 });
 
-/** Bump Round.updatedAt — invalidation signal for live/poll (docs/04 §1). */
-export const touchRound = (
+/** Bump Round.updatedAt + emit live event — invalidation signal (docs/04 §1, §6). */
+export const touchRound = async (
   database: typeof db,
   roundId: string,
-): Promise<unknown> =>
-  database.round.update({
+): Promise<void> => {
+  const r = await database.round.update({
     where: { id: roundId },
     data: { updatedAt: new Date() },
+    select: { updatedAt: true },
   });
+  roundEvents.emit(roundId, r.updatedAt);
+};

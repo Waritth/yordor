@@ -25,7 +25,34 @@ export function PlayStep({
     void utils.round.get.invalidate({ token });
     void utils.result.get.invalidate({ token });
   };
-  const setScore = api.score.set.useMutation({ onSuccess: invalidate });
+  // Optimistic: update the round cache immediately so net/preview react instantly.
+  const setScore = api.score.set.useMutation({
+    onMutate: async (vars) => {
+      await utils.round.get.cancel({ token });
+      const prev = utils.round.get.getData({ token });
+      utils.round.get.setData({ token }, (old) => {
+        if (!old) return old;
+        const scores = old.scores.filter(
+          (s) => !(s.playerId === vars.playerId && s.holeId === vars.holeId),
+        );
+        if (vars.strokes !== null) {
+          scores.push({
+            id: "optimistic",
+            roundId: old.id,
+            playerId: vars.playerId,
+            holeId: vars.holeId,
+            strokes: vars.strokes,
+          });
+        }
+        return { ...old, scores };
+      });
+      return { prev };
+    },
+    onError: (_e, _v, ctx) => {
+      if (ctx?.prev) utils.round.get.setData({ token }, ctx.prev);
+    },
+    onSettled: invalidate,
+  });
   const setPar = api.hole.setPar.useMutation({ onSuccess: invalidate });
   const setTurbo = api.hole.setTurbo.useMutation({ onSuccess: invalidate });
 
@@ -148,7 +175,7 @@ export function PlayStep({
                 {n === null ? "—" : `net ${n}`}
               </span>
               <input
-                key={`${hole.id}-${p.id}`}
+                key={`${hole.id}-${p.id}-${gross ?? ""}`}
                 type="number"
                 inputMode="numeric"
                 min={1}

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import QRCode from "react-qr-code";
 
 import { Button, Card, Section, cx } from "~/app/_ui";
 import { api } from "~/trpc/react";
@@ -18,17 +19,25 @@ export function ResultStep({
   onBack: () => void;
 }) {
   const utils = api.useUtils();
-  const { data } = api.result.get.useQuery({ token });
+  const { data } = api.result.get.useQuery(
+    { token },
+    { refetchInterval: 5000 },
+  );
   const setStatus = api.round.setStatus.useMutation({
     onSuccess: () => utils.round.get.invalidate({ token }),
   });
 
   const [copied, setCopied] = useState(false);
   const [openHole, setOpenHole] = useState<number | null>(null);
+  const [shareUrl, setShareUrl] = useState("");
+
+  useEffect(() => {
+    setShareUrl(`${window.location.origin}/round/${token}`);
+  }, [token]);
 
   const share = () => {
-    const url = `${window.location.origin}/round/${token}`;
-    void navigator.clipboard?.writeText(url).then(() => {
+    if (!shareUrl) return;
+    void navigator.clipboard?.writeText(shareUrl).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     });
@@ -156,9 +165,16 @@ export function ResultStep({
       )}
 
       {/* share */}
-      <Card className="space-y-2">
-        <p className="text-sm font-semibold text-black/70">แชร์รอบนี้</p>
-        <p className="text-xs text-black/40">ใครมีลิงก์ก็กรอก/ดูได้</p>
+      <Card className="flex flex-col items-center gap-3 text-center">
+        <div>
+          <p className="text-sm font-semibold text-black/70">แชร์รอบนี้</p>
+          <p className="text-xs text-black/40">สแกน QR หรือส่งลิงก์ — ใครมีก็กรอก/ดูได้</p>
+        </div>
+        {shareUrl && (
+          <div className="rounded-xl bg-white p-3">
+            <QRCode value={shareUrl} size={148} />
+          </div>
+        )}
         <Button variant="ghost" className="w-full" onClick={share}>
           {copied ? "คัดลอกแล้ว ✓" : "คัดลอกลิงก์"}
         </Button>

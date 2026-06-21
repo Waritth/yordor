@@ -39,14 +39,14 @@
 - [x] **เช็ค:** เล่น 18 หลุม 2 ทีมจบ, reload ข้อมูลอยู่, matrix ถูก (E2E ผ่านกับ Railway DB)
 
 ## P3 — Sync + Share ★ MVP LAUNCH (Team only)
-- [ ] `accessToken` flow + route `/round/{token}`
-- [ ] หน้าแชร์ลิงก์ + QR + localStorage รอบล่าสุด → `05` §9
-- [ ] subscription `round.live` (SSE) + in-memory event emitter
-- [ ] polling fallback (`refetchInterval`)
-- [ ] optimistic update `score.set`
-- [ ] indicator ออนไลน์/ซิงก์
-- [ ] `round.setStatus` (FINISHED lock) + ปลดล็อกแก้สกอร์
-- [ ] **เช็ค:** 2 เครื่องเปิดลิงก์เดียว กรอกพร้อมกัน เห็น update สด → **ปล่อยก๊วนลอง**
+- [x] `accessToken` flow + route `/round/{token}`
+- [x] หน้าแชร์ลิงก์ + QR + localStorage รอบล่าสุด → `05` §9
+- [x] subscription `round.live` (SSE) + in-memory event emitter
+- [x] polling fallback (`refetchInterval` 5s)
+- [x] optimistic update `score.set`
+- [x] indicator ออนไลน์/ซิงก์
+- [x] `round.setStatus` (FINISHED lock) + ปลดล็อกแก้สกอร์
+- [x] **เช็ค:** 2 เครื่องเปิดลิงก์เดียว กรอกพร้อมกัน เห็น update สด (verified: client A เห็นการแก้จาก client B เอง) → **ปล่อยก๊วนลอง**
 
 ## P4 — Bet Layers Infrastructure
 - [ ] tRPC: `bet.create/update/setParticipants/remove` + config validation (`04` §5)
