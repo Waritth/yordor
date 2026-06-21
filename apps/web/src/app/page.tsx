@@ -15,7 +15,18 @@ export default function Home() {
   const [holeCount, setHoleCount] = useState<9 | 18>(18);
   const [link, setLink] = useState("");
 
-  useEffect(() => setRecent(getRecent()), []);
+  // Default round name = today's date (client-only → no SSR hydration mismatch).
+  useEffect(() => {
+    setRecent(getRecent());
+    setName(
+      new Date().toLocaleDateString("th-TH", {
+        weekday: "short",
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      }),
+    );
+  }, []);
 
   const create = api.round.create.useMutation({
     onSuccess: (r, vars) => {
