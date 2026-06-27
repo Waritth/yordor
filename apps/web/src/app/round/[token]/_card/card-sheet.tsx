@@ -7,9 +7,7 @@ import { Button, Card, Section, cx } from "~/app/_ui";
 import { api } from "~/trpc/react";
 
 import type { RoundData } from "../round-flow";
-import { CardHandEntry } from "./card-hand-entry";
-
-type Editing = { handId: string | null } | null;
+import { CardHandEntry, CardHandFields } from "./card-hand-entry";
 
 const pointsOf = (
   hand: RoundData["cardHands"][number],
@@ -28,16 +26,22 @@ export function CardSheet({
   const utils = api.useUtils();
   const invalidate = () => utils.round.get.invalidate({ token });
 
-  const [editing, setEditing] = useState<Editing>(null);
-  const close = () => setEditing(null);
-  const afterWrite = () => {
-    close();
-    void invalidate();
-  };
+  const [editId, setEditId] = useState<string | null>(null);
+  const close = () => setEditId(null);
 
-  const addHand = api.card.addHand.useMutation({ onSuccess: afterWrite });
-  const updateHand = api.card.updateHand.useMutation({ onSuccess: afterWrite });
-  const removeHand = api.card.removeHand.useMutation({ onSuccess: afterWrite });
+  const addHand = api.card.addHand.useMutation({ onSuccess: () => invalidate() });
+  const updateHand = api.card.updateHand.useMutation({
+    onSuccess: () => {
+      close();
+      void invalidate();
+    },
+  });
+  const removeHand = api.card.removeHand.useMutation({
+    onSuccess: () => {
+      close();
+      void invalidate();
+    },
+  });
 
   const players = round.players;
   const hands = round.cardHands;
@@ -48,25 +52,30 @@ export function CardSheet({
     hands.map((h) => ({ index: h.index, points: pointsOf(h) })),
   );
 
-  const editingHand =
-    editing?.handId != null
-      ? hands.find((h) => h.id === editing.handId)
-      : undefined;
+  const editingHand = editId ? hands.find((h) => h.id === editId) : undefined;
 
   return (
     <div className="space-y-5">
       <Section title="ลงแต้มรายตา" subtitle="แต่ละตาผลรวมต้องเป็น 0">
-        <Button
-          className="w-full bg-[#C9A227] hover:bg-[#b08f22]"
-          onClick={() => setEditing({ handId: null })}
-        >
-          + ลงตาใหม่
-        </Button>
+        {/* inline 2×2 entry for the next hand */}
+        <Card className="space-y-3 border-2 border-[#C9A227]/30">
+          <p className="text-sm font-bold text-[#9a7d1f]">
+            ลงตาที่ {hands.length + 1}
+          </p>
+          <CardHandFields
+            key={`new-${hands.length}`}
+            players={players.map((p) => ({ id: p.id, name: p.name }))}
+            initial={null}
+            saving={addHand.isPending}
+            submitLabel="บันทึกตา"
+            onSave={(scores) => addHand.mutate({ token, scores })}
+          />
+        </Card>
 
         {hands.length === 0 ? (
           <Card>
             <p className="text-center text-sm text-black/40">
-              ยังไม่มีตา — กด “ลงตาใหม่”
+              ยังไม่มีตา — กรอกด้านบนแล้วกดบันทึก
             </p>
           </Card>
         ) : (
@@ -92,7 +101,7 @@ export function CardSheet({
                   return (
                     <tr
                       key={h.id}
-                      onClick={() => setEditing({ handId: h.id })}
+                      onClick={() => setEditId(h.id)}
                       className={cx(
                         "cursor-pointer",
                         dark ? "bg-black/[0.04]" : "bg-transparent",
@@ -156,25 +165,17 @@ export function CardSheet({
         ☰ ดูผลรวม
       </Button>
 
-      {editing && (
+      {editId && editingHand && (
         <CardHandEntry
           players={players.map((p) => ({ id: p.id, name: p.name }))}
-          initial={editingHand ? pointsOf(editingHand) : null}
-          title={
-            editingHand ? `แก้ตาที่ ${editingHand.index}` : `ลงตาที่ ${hands.length + 1}`
-          }
-          saving={addHand.isPending || updateHand.isPending}
+          initial={pointsOf(editingHand)}
+          title={`แก้ตาที่ ${editingHand.index}`}
+          saving={updateHand.isPending || removeHand.isPending}
           onClose={close}
           onSave={(scores) =>
-            editing.handId
-              ? updateHand.mutate({ token, handId: editing.handId, scores })
-              : addHand.mutate({ token, scores })
+            updateHand.mutate({ token, handId: editId, scores })
           }
-          onRemove={
-            editing.handId
-              ? () => removeHand.mutate({ token, handId: editing.handId! })
-              : undefined
-          }
+          onRemove={() => removeHand.mutate({ token, handId: editId })}
         />
       )}
     </div>

@@ -14,22 +14,19 @@ const toNum = (d: string | undefined): number => {
   return Number.isFinite(n) ? n : 0;
 };
 
-export function CardHandEntry({
+/** Inline quadrant entry form (2×2 for ≤4 players, list for 5+). Reused inline + in the edit modal. */
+export function CardHandFields({
   players,
   initial,
-  title,
   saving,
   onSave,
-  onClose,
-  onRemove,
+  submitLabel = "บันทึก",
 }: {
   players: PlayerLite[];
   initial: Record<string, number> | null;
-  title: string;
   saving: boolean;
   onSave: (scores: { playerId: string; points: number }[]) => void;
-  onClose: () => void;
-  onRemove?: () => void;
+  submitLabel?: string;
 }) {
   const [drafts, setDrafts] = useState<Record<string, string>>(() => {
     const d: Record<string, string> = {};
@@ -46,10 +43,6 @@ export function CardHandEntry({
 
   const sum = players.reduce((s, p) => s + toNum(drafts[p.id]), 0);
   const balanced = sum === 0;
-
-  const save = () =>
-    onSave(players.map((p) => ({ playerId: p.id, points: toNum(drafts[p.id]) })));
-
   const grid = players.length <= 4;
 
   const cell = (p: PlayerLite) => (
@@ -92,6 +85,65 @@ export function CardHandEntry({
   );
 
   return (
+    <div className="space-y-3">
+      <div
+        className={cx(
+          grid
+            ? "grid grid-cols-2 gap-2"
+            : "max-h-[50vh] space-y-2 overflow-y-auto",
+        )}
+      >
+        {players.map(cell)}
+      </div>
+
+      <div className="flex items-center gap-3 rounded-xl bg-black/[0.03] p-3">
+        <span className="text-sm text-black/50">รวม</span>
+        <span
+          className={cx(
+            "text-lg font-extrabold",
+            balanced ? "text-green-600" : "text-red-500",
+          )}
+        >
+          {sum > 0 ? `+${sum}` : sum}
+        </span>
+        <span className="text-xs text-black/40">
+          {balanced ? "✓ บันทึกได้" : sum > 0 ? `เกิน ${sum}` : `ขาด ${-sum}`}
+        </span>
+        <Button
+          className="ml-auto bg-[#C9A227] hover:bg-[#b08f22]"
+          disabled={!balanced || saving}
+          onClick={() =>
+            onSave(
+              players.map((p) => ({ playerId: p.id, points: toNum(drafts[p.id]) })),
+            )
+          }
+        >
+          {saving ? "บันทึก…" : submitLabel}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/** Modal wrapper around CardHandFields — used when editing an existing hand. */
+export function CardHandEntry({
+  players,
+  initial,
+  title,
+  saving,
+  onSave,
+  onClose,
+  onRemove,
+}: {
+  players: PlayerLite[];
+  initial: Record<string, number> | null;
+  title: string;
+  saving: boolean;
+  onSave: (scores: { playerId: string; points: number }[]) => void;
+  onClose: () => void;
+  onRemove?: () => void;
+}) {
+  return (
     <div
       className="fixed inset-0 z-50 flex flex-col bg-black/40"
       onClick={onClose}
@@ -107,39 +159,12 @@ export function CardHandEntry({
           </button>
         </div>
 
-        <div
-          className={cx(
-            grid ? "grid grid-cols-2 gap-2" : "max-h-[50vh] space-y-2 overflow-y-auto",
-          )}
-        >
-          {players.map(cell)}
-        </div>
-
-        <div className="flex items-center gap-3 rounded-xl bg-white p-3 shadow-sm">
-          <span className="text-sm text-black/50">รวม</span>
-          <span
-            className={cx(
-              "text-lg font-extrabold",
-              balanced ? "text-green-600" : "text-red-500",
-            )}
-          >
-            {sum > 0 ? `+${sum}` : sum}
-          </span>
-          <span className="text-xs text-black/40">
-            {balanced
-              ? "✓ บันทึกได้"
-              : sum > 0
-                ? `เกิน ${sum}`
-                : `ขาด ${-sum}`}
-          </span>
-          <Button
-            className="ml-auto bg-[#C9A227] hover:bg-[#b08f22]"
-            disabled={!balanced || saving}
-            onClick={save}
-          >
-            {saving ? "บันทึก…" : "บันทึก"}
-          </Button>
-        </div>
+        <CardHandFields
+          players={players}
+          initial={initial}
+          saving={saving}
+          onSave={onSave}
+        />
 
         {onRemove && (
           <button
