@@ -9,6 +9,7 @@ import { addRecent, getRecent, parseToken, type RecentRound } from "~/lib/recent
 import { api } from "~/trpc/react";
 
 const TEAM_GAME = "Best 1 Best 2";
+const CARD_GAME = "ไพ่สามกอง";
 
 const LOCKED_GAMES = [
   { icon: "⚔️", label: "แมตช์", sub: "ตัวต่อตัว · นับหลุม/สกอร์รวม" },
@@ -36,12 +37,13 @@ export default function Home() {
 
   const create = api.round.create.useMutation({
     onSuccess: (r, vars) => {
+      const isCard = vars.gameType === "CARD3";
       addRecent({
         token: r.accessToken,
         name: vars.name ?? todayName(),
-        holeCount: vars.holeCount ?? 18,
+        holeCount: isCard ? 0 : (vars.holeCount ?? 18),
         ts: Date.now(),
-        game: TEAM_GAME,
+        game: isCard ? CARD_GAME : TEAM_GAME,
       });
       router.push(`/round/${r.accessToken}`);
     },
@@ -49,6 +51,8 @@ export default function Home() {
 
   const playTeam = () =>
     create.mutate({ mode: "TEAM", name: todayName(), holeCount });
+  const playCard = () =>
+    create.mutate({ gameType: "CARD3", name: todayName() });
 
   const open = () => {
     const token = parseToken(link);
@@ -109,6 +113,29 @@ export default function Home() {
             </Button>
           </Card>
 
+          {/* Card3 — playable */}
+          <Card className="space-y-3 border-2 border-[#C9A227]/30">
+            <div className="flex items-start gap-3">
+              <span className="text-2xl">🃏</span>
+              <div className="flex-1">
+                <h3 className="font-bold text-[#9a7d1f]">{CARD_GAME}</h3>
+                <p className="text-xs text-black/50">
+                  นับแต้มรายตา · กรอกมือ · รวมทุกตา = 0
+                </p>
+              </div>
+              <span className="rounded-full bg-[#C9A227]/15 px-2 py-0.5 text-[10px] font-bold text-[#9a7d1f]">
+                เล่นได้
+              </span>
+            </div>
+            <Button
+              className="w-full bg-[#C9A227] hover:bg-[#b08f22]"
+              disabled={create.isPending}
+              onClick={playCard}
+            >
+              {create.isPending ? "กำลังสร้าง…" : "เล่น →"}
+            </Button>
+          </Card>
+
           {/* Locked modes */}
           {LOCKED_GAMES.map((g) => (
             <button
@@ -163,7 +190,9 @@ export default function Home() {
                   {r.name || "รอบไม่มีชื่อ"}
                 </span>
                 <span className="ml-2 shrink-0 text-xs text-black/40">
-                  {(r.game ?? "รอบ") + " · " + r.holeCount + " หลุม"}
+                  {r.holeCount > 0
+                    ? `${r.game ?? "รอบ"} · ${r.holeCount} หลุม`
+                    : (r.game ?? "รอบ")}
                 </span>
               </Link>
             ))}

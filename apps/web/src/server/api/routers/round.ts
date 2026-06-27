@@ -25,6 +25,10 @@ const roundInclude = {
       players: true, // BetPlayer rows
     },
   },
+  cardHands: {
+    orderBy: { index: "asc" },
+    include: { scores: true },
+  },
 } as const;
 
 export const roundRouter = createTRPCRouter({
@@ -36,9 +40,19 @@ export const roundRouter = createTRPCRouter({
         holeCount: z.union([z.literal(9), z.literal(18)]).default(18),
         // Only TEAM is playable in v1; other modes are picked but locked in UI.
         mode: z.literal("TEAM").default("TEAM"),
+        gameType: z.enum(["GOLF", "CARD3"]).default("GOLF"),
       }),
     )
     .mutation(async ({ ctx, input }) => {
+      // CARD3: just a round + players (no holes / bet / handicap).
+      if (input.gameType === "CARD3") {
+        const round = await ctx.db.round.create({
+          data: { name: input.name, gameType: "CARD3", holeCount: 0 },
+          select: { id: true, accessToken: true },
+        });
+        return { id: round.id, accessToken: round.accessToken };
+      }
+
       const round = await ctx.db.round.create({
         data: {
           name: input.name,

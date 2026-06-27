@@ -7,6 +7,7 @@ import { useState } from "react";
 import { cx } from "~/app/_ui";
 import { api, type RouterOutputs } from "~/trpc/react";
 
+import { CardFlow } from "./_card/card-flow";
 import { PlayStep } from "./_steps/play";
 import { ResultStep } from "./_steps/result";
 import { SetupStep } from "./_steps/setup";
@@ -59,6 +60,11 @@ export function RoundFlow({ token }: { token: string }) {
         </div>
       </Centered>
     );
+  }
+
+  // ไพ่สามกอง — แยก flow ออกจากกอล์ฟ (ใช้ shell sync เดิมร่วมกัน)
+  if (round.gameType === "CARD3") {
+    return <CardFlow token={token} round={round} syncing={syncing} />;
   }
 
   return (

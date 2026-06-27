@@ -19,6 +19,11 @@ enum RoundStatus {
     FINISHED
 }
 
+enum GameType {
+    GOLF // Best 1 Best 2 (และโหมดกอล์ฟอื่นในอนาคต)
+    CARD3 // ไพ่สามกอง (manual zero-sum scorer)
+}
+
 enum BetMode {
     TEAM // Best N round-robin
     MATCH // 1-vs-1 (match-style หรือ stroke-style ตาม config)
@@ -31,15 +36,18 @@ model Round {
     id          String      @id @default(cuid())
     accessToken String      @unique @default(cuid()) // ลิงก์ guest
     name        String      @default("")
+    gameType    GameType    @default(GOLF) // GOLF | CARD3 — rows เดิม = GOLF
     holeCount   Int         @default(18)
     status      RoundStatus @default(SETUP)
     createdAt   DateTime    @default(now())
     updatedAt   DateTime    @updatedAt
 
-    holes   Hole[]
-    players Player[]
-    scores  Score[]
-    bets    Bet[]
+    holes      Hole[]
+    players    Player[]
+    scores     Score[]
+    bets       Bet[]
+    cardHands  CardHand[]
+    cardScores CardScore[]
 
     @@index([accessToken])
 }
@@ -72,6 +80,7 @@ model Player {
     round      Round       @relation(fields: [roundId], references: [id], onDelete: Cascade)
     scores     Score[]
     betPlayers BetPlayer[]
+    cardScores CardScore[]
 
     @@index([roundId])
 }
@@ -134,4 +143,36 @@ model BetPlayer {
     @@unique([betId, playerId])
     @@index([betId])
     @@index([playerId])
+}
+
+// ── ไพ่สามกอง (CARD3) ─────────────────────────────────────────
+// บันทึกทั้ง "ตา" พร้อมกัน (atomic) เพราะต้องเช็ค Σ points = 0 ทั้งตา
+
+model CardHand {
+    id        String   @id @default(cuid())
+    roundId   String
+    index     Int // ตาที่ 1..N
+    createdAt DateTime @default(now())
+
+    round  Round       @relation(fields: [roundId], references: [id], onDelete: Cascade)
+    scores CardScore[]
+
+    @@unique([roundId, index])
+    @@index([roundId])
+}
+
+model CardScore {
+    id       String @id @default(cuid())
+    roundId  String
+    handId   String
+    playerId String
+    points   Int // บวก = ได้, ลบ = เสีย
+
+    round  Round    @relation(fields: [roundId], references: [id], onDelete: Cascade)
+    hand   CardHand @relation(fields: [handId], references: [id], onDelete: Cascade)
+    player Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+    @@unique([handId, playerId])
+    @@index([roundId])
+    @@index([handId])
 }
