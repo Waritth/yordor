@@ -48,6 +48,13 @@
 - [x] `round.setStatus` (FINISHED lock) + ปลดล็อกแก้สกอร์
 - [x] **เช็ค:** 2 เครื่องเปิดลิงก์เดียว กรอกพร้อมกัน เห็น update สด (verified: client A เห็นการแก้จาก client B เอง) → **ปล่อยก๊วนลอง**
 
+## P3.5 — หน้าแรก = เลือกเกม (Game Picker)
+- [x] เปลี่ยนหน้าแรกจาก "สร้างรอบ" → **เมนูเลือกเกม** (`05` §2)
+- [x] การ์ด "Best 1 Best 2" (= Team mode) → แตะแล้ว `round.create` (mode=TEAM) เข้า setup
+- [x] การ์ด แมตช์ / สโตรก / บ๊วยจ่ายหัว → locked "เร็วๆ นี้" (แตะขึ้น "กำลังพัฒนา")
+- [x] คง "เปิดจากลิงก์" + รอบล่าสุดใน localStorage (โชว์ชื่อเกมด้วย)
+- [x] **เช็ค:** เปิดแอปเจอหน้าเลือกเกม, Best 1 Best 2 เข้าเล่นได้, การ์ดอื่น locked
+
 ## P4 — Bet Layers Infrastructure
 - [ ] tRPC: `bet.create/update/setParticipants/remove` + config validation (`04` §5)
 - [ ] refactor Team mode เดิม → เป็น Bet (mode=TEAM)
@@ -82,6 +89,21 @@
 - [ ] **เช็ค:** ทุกโหมด + Turbo + Bonus เขียว + เล่นจริงไม่มี bug → **v1 สมบูรณ์**
 
 ---
+
+## C — ไพ่สามกอง (CARD3, zero-sum scorer)
+อ้างอิง: `CARD_3PILE_SPEC.md` · ใช้โครง Round/guest/sync เดิมร่วมกัน
+- [ ] schema: เพิ่ม `GameType` enum + `Round.gameType` (default GOLF) + models `CardHand`, `CardScore` → migration
+- [ ] `round.create` รับ param `gameType` (default GOLF)
+- [ ] engine: `packages/engine/card3.ts` — `validHand()` (Σ=0), `computeCard3()` (totals)
+- [ ] golden test: `CARD_3PILE_SPEC.md` §7 (C1–C5 + invariants)
+- [ ] tRPC: `card.addHand/updateHand/removeHand` — **validate Σ=0 → BAD_REQUEST**, `card.getResult`
+- [ ] UI: การ์ด "ไพ่สามกอง" ในหน้าเลือกเกม (P3.5) → create CARD3 เข้า setup
+- [ ] UI: setup ผู้เล่น (ไม่มีหลุม/handicap)
+- [ ] UI: หน้าลงแต้มย่อย **แบ่งจอ 2×2 (4 quadrant)** ช่องใหญ่กดถนัด + ปุ่ม −/+ + รับเลขลบ + bar ล่าง "รวม = X" สด + ปุ่มบันทึกเทาจนกว่า Σ=0 (รองรับ 2–3 คนเติม quadrant, 5+ ปัดหน้า/fallback list) → spec §6
+- [ ] UI: หน้า score รวม (grid) แถว=ตา คอลัมน์=คน + **สลับแถบสีเข้ม/อ่อนทุก 13 ตา** (`floor((index-1)/13)%2`) + เส้นคั่นหนาจบชุด 13 + แถวรวม sticky → spec §6
+- [ ] UI: หน้าผล (ยอดสุทธิต่อคน + Σ=0 + แนะนำเคลียร์ optional)
+- [ ] เชื่อม sync เดิม (`round.live`) + รอบล่าสุด localStorage โชว์ชื่อเกม
+- [ ] **เช็ค:** ลงหลายตา reject ตา Σ≠0 ได้, ยอดสะสมถูก, 2 device sync, golden test เขียว
 
 ## Roadmap+ (หลัง v1 — ยังไม่ติ๊ก)
 - [ ] Skin mode (per-hole pot + carry-over)

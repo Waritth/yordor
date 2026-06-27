@@ -34,6 +34,8 @@ export const roundRouter = createTRPCRouter({
       z.object({
         name: z.string().default(""),
         holeCount: z.union([z.literal(9), z.literal(18)]).default(18),
+        // Only TEAM is playable in v1; other modes are picked but locked in UI.
+        mode: z.literal("TEAM").default("TEAM"),
       }),
     )
     .mutation(async ({ ctx, input }) => {

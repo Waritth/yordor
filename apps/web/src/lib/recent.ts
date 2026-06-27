@@ -5,6 +5,7 @@ export interface RecentRound {
   name: string;
   holeCount: number;
   ts: number;
+  game?: string; // e.g. "Best 1 Best 2"
 }
 
 const KEY = "yordor:recent";

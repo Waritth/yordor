@@ -8,37 +8,47 @@ import { Button, Card, cx } from "~/app/_ui";
 import { addRecent, getRecent, parseToken, type RecentRound } from "~/lib/recent";
 import { api } from "~/trpc/react";
 
+const TEAM_GAME = "Best 1 Best 2";
+
+const LOCKED_GAMES = [
+  { icon: "⚔️", label: "แมตช์", sub: "ตัวต่อตัว · นับหลุม/สกอร์รวม" },
+  { icon: "🏌️", label: "สโตรก", sub: "เดี่ยว · นับสกอร์รวม net/gross" },
+  { icon: "🪙", label: "บ๊วยจ่ายหัว", sub: "รายหลุม · บ๊วยจ่ายทุกหัว" },
+];
+
+function todayName() {
+  return new Date().toLocaleDateString("th-TH", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
 export default function Home() {
   const router = useRouter();
   const [recent, setRecent] = useState<RecentRound[]>([]);
-  const [name, setName] = useState("");
   const [holeCount, setHoleCount] = useState<9 | 18>(18);
   const [link, setLink] = useState("");
+  const [locked, setLocked] = useState<string | null>(null);
 
-  // Default round name = today's date (client-only → no SSR hydration mismatch).
-  useEffect(() => {
-    setRecent(getRecent());
-    setName(
-      new Date().toLocaleDateString("th-TH", {
-        weekday: "short",
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-      }),
-    );
-  }, []);
+  useEffect(() => setRecent(getRecent()), []);
 
   const create = api.round.create.useMutation({
     onSuccess: (r, vars) => {
       addRecent({
         token: r.accessToken,
-        name: vars.name ?? "รอบใหม่",
+        name: vars.name ?? todayName(),
         holeCount: vars.holeCount ?? 18,
         ts: Date.now(),
+        game: TEAM_GAME,
       });
       router.push(`/round/${r.accessToken}`);
     },
   });
+
+  const playTeam = () =>
+    create.mutate({ mode: "TEAM", name: todayName(), holeCount });
 
   const open = () => {
     const token = parseToken(link);
@@ -53,39 +63,74 @@ export default function Home() {
           <p className="mt-1 text-black/50">นับแต้มกอล์ฟ หลายโหมด</p>
         </header>
 
-        <Card className="space-y-4">
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="ชื่อรอบ (เช่น ก๊วนวันอาทิตย์)"
-            className="w-full rounded-xl border border-black/10 px-3 py-2.5 text-sm outline-none focus:border-[#1B5E20]"
-          />
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-black/60">จำนวนหลุม</span>
-            {([9, 18] as const).map((n) => (
-              <button
-                key={n}
-                onClick={() => setHoleCount(n)}
-                className={cx(
-                  "rounded-lg px-4 py-1.5 text-sm font-semibold",
-                  holeCount === n
-                    ? "bg-[#1B5E20] text-white"
-                    : "bg-black/5 text-black/60",
-                )}
-              >
-                {n}
-              </button>
-            ))}
-          </div>
-          <Button
-            className="w-full"
-            disabled={create.isPending}
-            onClick={() => create.mutate({ name, holeCount })}
-          >
-            {create.isPending ? "กำลังสร้าง…" : "+ สร้างรอบใหม่"}
-          </Button>
-        </Card>
+        {/* game picker */}
+        <div className="space-y-3">
+          <p className="px-1 text-sm font-semibold text-black/50">เลือกเกม</p>
 
+          {/* Team — playable */}
+          <Card className="space-y-3 border-2 border-[#1B5E20]/20">
+            <div className="flex items-start gap-3">
+              <span className="text-2xl">⛳</span>
+              <div className="flex-1">
+                <h3 className="font-bold text-[#1B5E20]">{TEAM_GAME}</h3>
+                <p className="text-xs text-black/50">
+                  แบ่งทีม · Best 1/Best 2 · ตีคู่ round-robin
+                </p>
+              </div>
+              <span className="rounded-full bg-[#1B5E20]/10 px-2 py-0.5 text-[10px] font-bold text-[#1B5E20]">
+                เล่นได้
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-black/50">จำนวนหลุม</span>
+              {([9, 18] as const).map((n) => (
+                <button
+                  key={n}
+                  onClick={() => setHoleCount(n)}
+                  className={cx(
+                    "rounded-lg px-3 py-1 text-sm font-semibold",
+                    holeCount === n
+                      ? "bg-[#1B5E20] text-white"
+                      : "bg-black/5 text-black/60",
+                  )}
+                >
+                  {n}
+                </button>
+              ))}
+            </div>
+
+            <Button
+              className="w-full"
+              disabled={create.isPending}
+              onClick={playTeam}
+            >
+              {create.isPending ? "กำลังสร้าง…" : "เล่น →"}
+            </Button>
+          </Card>
+
+          {/* Locked modes */}
+          {LOCKED_GAMES.map((g) => (
+            <button
+              key={g.label}
+              onClick={() => setLocked(g.label)}
+              className="w-full text-left"
+            >
+              <Card className="flex items-center gap-3 opacity-70">
+                <span className="text-2xl grayscale">{g.icon}</span>
+                <div className="flex-1">
+                  <h3 className="font-bold text-black/60">{g.label}</h3>
+                  <p className="text-xs text-black/40">{g.sub}</p>
+                </div>
+                <span className="rounded-full bg-[#C9A227]/15 px-2 py-0.5 text-[10px] font-bold text-[#9a7d1f]">
+                  เร็วๆ นี้
+                </span>
+              </Card>
+            </button>
+          ))}
+        </div>
+
+        {/* open from link */}
         <Card className="space-y-2">
           <p className="text-sm font-semibold text-black/70">เปิดรอบจากลิงก์</p>
           <div className="flex gap-2">
@@ -102,6 +147,7 @@ export default function Home() {
           </div>
         </Card>
 
+        {/* recent */}
         {recent.length > 0 && (
           <div className="space-y-2">
             <p className="px-1 text-sm font-semibold text-black/50">
@@ -113,13 +159,39 @@ export default function Home() {
                 href={`/round/${r.token}`}
                 className="flex items-center justify-between rounded-xl bg-white px-4 py-3 text-sm shadow-sm"
               >
-                <span className="font-medium">{r.name || "รอบไม่มีชื่อ"}</span>
-                <span className="text-black/40">{r.holeCount} หลุม</span>
+                <span className="min-w-0 flex-1 truncate font-medium">
+                  {r.name || "รอบไม่มีชื่อ"}
+                </span>
+                <span className="ml-2 shrink-0 text-xs text-black/40">
+                  {(r.game ?? "รอบ") + " · " + r.holeCount + " หลุม"}
+                </span>
               </Link>
             ))}
           </div>
         )}
       </div>
+
+      {/* "coming soon" sheet */}
+      {locked && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/30"
+          onClick={() => setLocked(null)}
+        >
+          <div
+            className="w-full max-w-md space-y-3 rounded-t-2xl bg-white p-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mx-auto h-1 w-10 rounded-full bg-black/10" />
+            <h3 className="text-lg font-bold text-[#1B5E20]">🚧 กำลังพัฒนา</h3>
+            <p className="text-sm text-black/60">
+              โหมด “{locked}” เร็วๆ นี้ — ตอนนี้เล่น {TEAM_GAME} ได้ก่อน
+            </p>
+            <Button className="w-full" onClick={() => setLocked(null)}>
+              เข้าใจแล้ว
+            </Button>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
