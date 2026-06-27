@@ -29,6 +29,10 @@ export function CardSetup({
   const remove = api.player.remove.useMutation({ onSuccess: invalidate });
   const rename = api.player.rename.useMutation({ onSuccess: invalidate });
 
+  const ready =
+    round.players.length >= 2 &&
+    round.players.every((p) => p.name.trim() !== "");
+
   return (
     <div className="space-y-6">
       <Section title="ตั้งวง" subtitle="ใส่รายชื่อผู้เล่น (2 คนขึ้นไป)">
@@ -84,13 +88,20 @@ export function CardSetup({
         </Card>
       </Section>
 
-      <Button
-        className="w-full bg-[#C9A227] hover:bg-[#b08f22]"
-        disabled={round.players.length < 2}
-        onClick={onNext}
-      >
-        ลงแต้ม →
-      </Button>
+      <div className="space-y-1">
+        <Button
+          className="w-full bg-[#C9A227] hover:bg-[#b08f22]"
+          disabled={!ready}
+          onClick={onNext}
+        >
+          ลงแต้ม →
+        </Button>
+        {!ready && (
+          <p className="text-center text-xs text-black/40">
+            ต้องมีผู้เล่น ≥2 คน · กรอกชื่อให้ครบ (ลบช่องที่ไม่ใช้)
+          </p>
+        )}
+      </div>
     </div>
   );
 }

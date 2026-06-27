@@ -12,6 +12,8 @@ import { roundEvents } from "~/server/events";
 
 /** Empty player slots seeded per team on create (ready to type — no extra clicks). */
 export const SLOTS_PER_TEAM = 2;
+/** Empty player slots seeded for a new CARD3 round (fits the 2×2 entry). */
+export const CARD_DEFAULT_PLAYERS = 4;
 
 /** Full round payload shared by round.get (and consumed by the engine adapter). */
 const roundInclude = {
@@ -47,7 +49,19 @@ export const roundRouter = createTRPCRouter({
       // CARD3: just a round + players (no holes / bet / handicap).
       if (input.gameType === "CARD3") {
         const round = await ctx.db.round.create({
-          data: { name: input.name, gameType: "CARD3", holeCount: 0 },
+          data: {
+            name: input.name,
+            gameType: "CARD3",
+            holeCount: 0,
+            players: {
+              createMany: {
+                data: Array.from({ length: CARD_DEFAULT_PLAYERS }, (_, i) => ({
+                  name: "",
+                  order: i,
+                })),
+              },
+            },
+          },
           select: { id: true, accessToken: true },
         });
         return { id: round.id, accessToken: round.accessToken };
