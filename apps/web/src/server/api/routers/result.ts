@@ -1,5 +1,6 @@
 import { computeTeam } from "@yordor/engine";
 
+import { computeGroups } from "~/lib/group-input";
 import { buildTeamInput, teamBets } from "~/lib/team-input";
 import { createTRPCRouter, roundProcedure } from "~/server/api/trpc";
 
@@ -14,6 +15,8 @@ const roundInclude = {
       players: true,
     },
   },
+  runnerSegments: true,
+  groups: { orderBy: { order: "asc" }, include: { players: true } },
 } as const;
 
 export const resultRouter = createTRPCRouter({
@@ -24,7 +27,7 @@ export const resultRouter = createTRPCRouter({
       relationLoadStrategy: "join",
       include: roundInclude,
     });
-    if (!round) return { teamResults: [] };
+    if (!round) return { teamResults: [], groupResults: [], playerTotals: {} };
 
     const teamResults = teamBets(round).map((bet) => {
       const input = buildTeamInput(round, bet);
@@ -43,6 +46,9 @@ export const resultRouter = createTRPCRouter({
       };
     });
 
-    return { teamResults };
+    // วงส่วนตัว (player-level) — kept separate from the team table
+    const { games: groupResults, playerTotals } = computeGroups(round);
+
+    return { teamResults, groupResults, playerTotals };
   }),
 });

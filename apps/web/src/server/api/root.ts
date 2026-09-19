@@ -1,8 +1,10 @@
 import { cardRouter } from "~/server/api/routers/card";
+import { groupRouter } from "~/server/api/routers/group";
 import { holeRouter } from "~/server/api/routers/hole";
 import { playerRouter } from "~/server/api/routers/player";
 import { resultRouter } from "~/server/api/routers/result";
 import { roundRouter } from "~/server/api/routers/round";
+import { runnerRouter } from "~/server/api/routers/runner";
 import { scoreRouter } from "~/server/api/routers/score";
 import { teamRouter } from "~/server/api/routers/team";
 import { createCallerFactory, createTRPCRouter } from "~/server/api/trpc";
@@ -19,6 +21,8 @@ export const appRouter = createTRPCRouter({
   team: teamRouter,
   result: resultRouter,
   card: cardRouter,
+  runner: runnerRouter,
+  group: groupRouter,
 });
 
 // export type definition of API

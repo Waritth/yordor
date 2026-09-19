@@ -31,6 +31,8 @@ const roundInclude = {
     orderBy: { index: "asc" },
     include: { scores: true },
   },
+  runnerSegments: { orderBy: { fromHole: "asc" } },
+  groups: { orderBy: { order: "asc" }, include: { players: true } },
 } as const;
 
 export const roundRouter = createTRPCRouter({

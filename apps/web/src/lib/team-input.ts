@@ -16,6 +16,13 @@ export interface RoundPlayer {
   hcpPar3: number;
   hcpPar4: number;
   hcpPar5: number;
+  mainRole: string; // MEMBER | RUNNER | OFF
+}
+export interface RoundRunnerSegment {
+  playerId: string;
+  teamId: string;
+  fromHole: number;
+  toHole: number;
 }
 export interface RoundScore {
   playerId: string;
@@ -44,9 +51,10 @@ export interface RoundForEngine {
   players: RoundPlayer[];
   scores: RoundScore[];
   bets: RoundBet[];
+  runnerSegments: RoundRunnerSegment[];
 }
 
-function toEnginePlayer(p: RoundPlayer): Player {
+export function toEnginePlayer(p: RoundPlayer): Player {
   return {
     id: p.id,
     name: p.name,
@@ -54,11 +62,10 @@ function toEnginePlayer(p: RoundPlayer): Player {
   };
 }
 
-/** Build computeTeam() inputs for a single TEAM bet within a round. */
-export function buildTeamInput(
-  round: RoundForEngine,
-  bet: RoundBet,
-): { teams: Team[]; holes: Hole[]; scores: Scores } {
+/** Engine holes + scores matrix shared by every game in the round. */
+export function buildHolesScores(
+  round: Pick<RoundForEngine, "holes" | "scores">,
+): { holes: Hole[]; scores: Scores } {
   const sortedHoles = [...round.holes].sort((a, b) => a.index - b.index);
   const pos = new Map<string, number>(); // holeId → array position
   sortedHoles.forEach((h, i) => pos.set(h.id, i));
@@ -77,6 +84,16 @@ export function buildTeamInput(
       s.strokes;
   }
 
+  return { holes, scores };
+}
+
+/** Build computeTeam() inputs for a single TEAM bet within a round. */
+export function buildTeamInput(
+  round: RoundForEngine,
+  bet: RoundBet,
+): { teams: Team[]; holes: Hole[]; scores: Scores } {
+  const { holes, scores } = buildHolesScores(round);
+
   const memberOf = new Map<string, string | null>();
   for (const bp of bet.players) memberOf.set(bp.playerId, bp.teamId);
 
@@ -88,8 +105,19 @@ export function buildTeamInput(
       id: t.id,
       name: t.name,
       players: round.players
-        .filter((p) => memberOf.get(p.id) === t.id)
+        .filter((p) => p.mainRole === "MEMBER" && memberOf.get(p.id) === t.id)
         .map((p) => toEnginePlayer(playerById.get(p.id)!)),
+      // ตัววิ่ง: only enabled runners (mainRole RUNNER) count, per their segments
+      runners: round.runnerSegments
+        .filter(
+          (s) =>
+            s.teamId === t.id && playerById.get(s.playerId)?.mainRole === "RUNNER",
+        )
+        .map((s) => ({
+          player: toEnginePlayer(playerById.get(s.playerId)!),
+          fromHole: s.fromHole,
+          toHole: s.toHole,
+        })),
     }));
 
   return { teams, holes, scores };

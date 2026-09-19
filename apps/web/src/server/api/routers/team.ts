@@ -133,6 +133,10 @@ export const teamRouter = createTRPCRouter({
         },
         update: { teamId: team.id },
       });
+      await ctx.db.player.update({
+        where: { id: input.playerId },
+        data: { mainRole: "MEMBER" },
+      });
       await touchRound(ctx.db, ctx.round.id);
       return { ok: true as const };
     }),

@@ -3,176 +3,234 @@
 // Models follow docs/03_DATABASE_SCHEMA.md
 
 generator client {
-    provider        = "prisma-client-js"
-    output          = "../generated/prisma"
-    previewFeatures = ["relationJoins"] // single-JOIN includes (fewer round-trips)
+  provider        = "prisma-client-js"
+  output          = "../generated/prisma"
+  previewFeatures = ["relationJoins"] // single-JOIN includes (fewer round-trips)
 }
 
 datasource db {
-    provider = "postgresql"
-    url      = env("DATABASE_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 enum RoundStatus {
-    SETUP
-    PLAYING
-    FINISHED
+  SETUP
+  PLAYING
+  FINISHED
 }
 
 enum GameType {
-    GOLF // Best 1 Best 2 (และโหมดกอล์ฟอื่นในอนาคต)
-    CARD3 // ไพ่สามกอง (manual zero-sum scorer)
+  GOLF // Best 1 Best 2 (และโหมดกอล์ฟอื่นในอนาคต)
+  CARD3 // ไพ่สามกอง (manual zero-sum scorer)
+}
+
+enum MainRole {
+  MEMBER // อยู่ทีมประจำ
+  RUNNER // ตัววิ่ง — อยู่ทีมตามตารางวิ่ง
+  OFF // ไม่เล่นก๊วนใหญ่ (ยังเข้าวงส่วนตัวได้)
 }
 
 enum BetMode {
-    TEAM // Best N round-robin
-    MATCH // 1-vs-1 (match-style หรือ stroke-style ตาม config)
-    STROKE // เดี่ยว round-robin
-    HIGHLOW // บ๊วยจ่ายหัว รายหลุม
-    // SKIN // roadmap
+  TEAM // Best N round-robin
+  MATCH // 1-vs-1 (match-style หรือ stroke-style ตาม config)
+  STROKE // เดี่ยว round-robin
+  HIGHLOW // บ๊วยจ่ายหัว รายหลุม
+  // SKIN // roadmap
 }
 
 model Round {
-    id          String      @id @default(cuid())
-    accessToken String      @unique @default(cuid()) // ลิงก์ guest
-    name        String      @default("")
-    gameType    GameType    @default(GOLF) // GOLF | CARD3 — rows เดิม = GOLF
-    holeCount   Int         @default(18)
-    status      RoundStatus @default(SETUP)
-    createdAt   DateTime    @default(now())
-    updatedAt   DateTime    @updatedAt
+  id          String      @id @default(cuid())
+  accessToken String      @unique @default(cuid()) // ลิงก์ guest
+  name        String      @default("")
+  gameType    GameType    @default(GOLF) // GOLF | CARD3 — rows เดิม = GOLF
+  holeCount   Int         @default(18)
+  status      RoundStatus @default(SETUP)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 
-    holes      Hole[]
-    players    Player[]
-    scores     Score[]
-    bets       Bet[]
-    cardHands  CardHand[]
-    cardScores CardScore[]
+  holes          Hole[]
+  players        Player[]
+  scores         Score[]
+  bets           Bet[]
+  cardHands      CardHand[]
+  cardScores     CardScore[]
+  runnerSegments RunnerSegment[]
+  groups         Group[]
 
-    @@index([accessToken])
+  @@index([accessToken])
 }
 
 model Hole {
-    id           String  @id @default(cuid())
-    roundId      String
-    index        Int // 0..holeCount-1
-    par          Int     @default(4) // 3 | 4 | 5
-    turboAllowed Boolean @default(false)
-    turboOn      Boolean @default(false)
+  id           String  @id @default(cuid())
+  roundId      String
+  index        Int // 0..holeCount-1
+  par          Int     @default(4) // 3 | 4 | 5
+  turboAllowed Boolean @default(false)
+  turboOn      Boolean @default(false)
 
-    round  Round   @relation(fields: [roundId], references: [id], onDelete: Cascade)
-    scores Score[]
+  round  Round   @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  scores Score[]
 
-    @@unique([roundId, index])
-    @@index([roundId])
+  @@unique([roundId, index])
+  @@index([roundId])
 }
 
 model Player {
-    id      String @id @default(cuid())
-    roundId String
-    name    String
-    color   String @default("#1B5E20")
-    hcpPar3 Float  @default(0)
-    hcpPar4 Float  @default(0)
-    hcpPar5 Float  @default(0)
-    order   Int    @default(0)
+  id       String   @id @default(cuid())
+  roundId  String
+  name     String
+  color    String   @default("#1B5E20")
+  hcpPar3  Float    @default(0)
+  hcpPar4  Float    @default(0)
+  hcpPar5  Float    @default(0)
+  order    Int      @default(0)
+  mainRole MainRole @default(MEMBER)
 
-    round      Round       @relation(fields: [roundId], references: [id], onDelete: Cascade)
-    scores     Score[]
-    betPlayers BetPlayer[]
-    cardScores CardScore[]
+  round          Round           @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  scores         Score[]
+  betPlayers     BetPlayer[]
+  cardScores     CardScore[]
+  runnerSegments RunnerSegment[]
+  groupPlayers   GroupPlayer[]
 
-    @@index([roundId])
+  @@index([roundId])
 }
 
 model Score {
-    id       String @id @default(cuid())
-    roundId  String
-    playerId String
-    holeId   String
-    strokes  Int // gross; ยังไม่กรอก = ไม่มี row (null = ไม่มีแถว)
+  id       String @id @default(cuid())
+  roundId  String
+  playerId String
+  holeId   String
+  strokes  Int // gross; ยังไม่กรอก = ไม่มี row (null = ไม่มีแถว)
 
-    round  Round  @relation(fields: [roundId], references: [id], onDelete: Cascade)
-    player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
-    hole   Hole   @relation(fields: [holeId], references: [id], onDelete: Cascade)
+  round  Round  @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  hole   Hole   @relation(fields: [holeId], references: [id], onDelete: Cascade)
 
-    @@unique([playerId, holeId])
-    @@index([roundId])
-    @@index([holeId])
+  @@unique([playerId, holeId])
+  @@index([roundId])
+  @@index([holeId])
 }
 
 model Bet {
-    id      String  @id @default(cuid())
-    roundId String
-    mode    BetMode
-    name    String  @default("")
-    config  Json    @default("{}") // shape ตามโหมด — ดู 03 §4
-    order   Int     @default(0)
+  id      String  @id @default(cuid())
+  roundId String
+  mode    BetMode
+  name    String  @default("")
+  config  Json    @default("{}") // shape ตามโหมด — ดู 03 §4
+  order   Int     @default(0)
 
-    round   Round       @relation(fields: [roundId], references: [id], onDelete: Cascade)
-    teams   Team[]
-    players BetPlayer[]
+  round   Round       @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  teams   Team[]
+  players BetPlayer[]
 
-    @@index([roundId])
+  @@index([roundId])
 }
 
 model Team {
-    id    String @id @default(cuid())
-    betId String
-    name  String
-    color String @default("#1B5E20")
-    order Int    @default(0)
+  id    String @id @default(cuid())
+  betId String
+  name  String
+  color String @default("#1B5E20")
+  order Int    @default(0)
 
-    bet     Bet         @relation(fields: [betId], references: [id], onDelete: Cascade)
-    members BetPlayer[]
+  bet            Bet             @relation(fields: [betId], references: [id], onDelete: Cascade)
+  members        BetPlayer[]
+  runnerSegments RunnerSegment[]
 
-    @@index([betId])
+  @@index([betId])
 }
 
 model BetPlayer {
-    id       String  @id @default(cuid())
-    betId    String
-    playerId String
-    teamId   String? // set เฉพาะ TEAM mode
-    side     String? // "A" | "B" เฉพาะ MATCH mode
+  id       String  @id @default(cuid())
+  betId    String
+  playerId String
+  teamId   String? // set เฉพาะ TEAM mode
+  side     String? // "A" | "B" เฉพาะ MATCH mode
 
-    bet    Bet    @relation(fields: [betId], references: [id], onDelete: Cascade)
-    player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
-    team   Team?  @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  bet    Bet    @relation(fields: [betId], references: [id], onDelete: Cascade)
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  team   Team?  @relation(fields: [teamId], references: [id], onDelete: SetNull)
 
-    @@unique([betId, playerId])
-    @@index([betId])
-    @@index([playerId])
+  @@unique([betId, playerId])
+  @@index([betId])
+  @@index([playerId])
 }
 
 // ── ไพ่สามกอง (CARD3) ─────────────────────────────────────────
 // บันทึกทั้ง "ตา" พร้อมกัน (atomic) เพราะต้องเช็ค Σ points = 0 ทั้งตา
 
 model CardHand {
-    id        String   @id @default(cuid())
-    roundId   String
-    index     Int // ตาที่ 1..N
-    createdAt DateTime @default(now())
+  id        String   @id @default(cuid())
+  roundId   String
+  index     Int // ตาที่ 1..N
+  createdAt DateTime @default(now())
 
-    round  Round       @relation(fields: [roundId], references: [id], onDelete: Cascade)
-    scores CardScore[]
+  round  Round       @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  scores CardScore[]
 
-    @@unique([roundId, index])
-    @@index([roundId])
+  @@unique([roundId, index])
+  @@index([roundId])
 }
 
 model CardScore {
-    id       String @id @default(cuid())
-    roundId  String
-    handId   String
-    playerId String
-    points   Int // บวก = ได้, ลบ = เสีย
+  id       String @id @default(cuid())
+  roundId  String
+  handId   String
+  playerId String
+  points   Int // บวก = ได้, ลบ = เสีย
 
-    round  Round    @relation(fields: [roundId], references: [id], onDelete: Cascade)
-    hand   CardHand @relation(fields: [handId], references: [id], onDelete: Cascade)
-    player Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  round  Round    @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  hand   CardHand @relation(fields: [handId], references: [id], onDelete: Cascade)
+  player Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
 
-    @@unique([handId, playerId])
-    @@index([roundId])
-    @@index([handId])
+  @@unique([handId, playerId])
+  @@index([roundId])
+  @@index([handId])
+}
+
+// ── ตัววิ่ง + วงส่วนตัว (docs/RUNNER_GROUPS_SPEC.md) ─────────────
+
+model RunnerSegment {
+  id       String @id @default(cuid())
+  roundId  String
+  playerId String
+  teamId   String
+  fromHole Int // 1-based, inclusive
+  toHole   Int
+
+  round  Round  @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  team   Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@index([roundId])
+  @@index([playerId])
+}
+
+model Group {
+  id      String @id @default(cuid())
+  roundId String
+  name    String @default("")
+  order   Int    @default(0)
+  config  Json   @default("{}") // { match:{on,bonus,turbo}, highlow:{on,bonus,turbo} }
+
+  round   Round         @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  players GroupPlayer[]
+
+  @@index([roundId])
+}
+
+model GroupPlayer {
+  id       String @id @default(cuid())
+  groupId  String
+  playerId String
+  hcpPar3  Float? // null = ใช้ต่อชุดหลักของ Player
+  hcpPar4  Float?
+  hcpPar5  Float?
+
+  group  Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, playerId])
+  @@index([groupId])
 }
