@@ -3,6 +3,8 @@
 import { Button, Card, Section, cx } from "~/app/_ui";
 import { api } from "~/trpc/react";
 
+import { betBestN } from "~/lib/team-input";
+
 import type { RoundData } from "../round-flow";
 import { RunnersCard } from "./runners-card";
 
@@ -28,6 +30,12 @@ export function SetupStep({
   const addTeam = api.team.create.useMutation({ onSuccess: invalidate });
   const removeTeam = api.team.remove.useMutation({ onSuccess: invalidate });
   const renameTeam = api.team.rename.useMutation({ onSuccess: invalidate });
+  const setBestN = api.team.setBestN.useMutation({
+    onSuccess: () => {
+      void invalidate();
+      void utils.result.get.invalidate({ token });
+    },
+  });
 
   const bet = round.bets.find((b) => b.mode === "TEAM");
   const teams = bet?.teams ?? [];
@@ -89,6 +97,30 @@ export function SetupStep({
         title="ทีม · ผู้เล่น · แต้มต่อ"
         subtitle="net = สกอร์จริง + แต้มต่อ (ต่อ = บวกเข้า net)"
       >
+        <Card className="flex items-center gap-2 py-2.5">
+          <span className="text-xs text-black/50">นับ</span>
+          {(
+            [
+              [1, "Best 1"],
+              [2, "Best 1-2"],
+              [3, "Best 1-2-3"],
+            ] as const
+          ).map(([n, label]) => (
+            <button
+              key={n}
+              onClick={() => setBestN.mutate({ token, bestN: n })}
+              className={cx(
+                "flex-1 rounded-lg py-1.5 text-xs font-semibold",
+                bet && betBestN(bet) === n
+                  ? "bg-[#1B5E20] text-white"
+                  : "bg-black/5 text-black/50",
+              )}
+            >
+              {label}
+            </button>
+          ))}
+        </Card>
+
         <div className="space-y-3">
           {teams.map((t) => {
             const ps = playersOf(t.id);

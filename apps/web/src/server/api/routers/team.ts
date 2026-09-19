@@ -69,6 +69,28 @@ export const teamRouter = createTRPCRouter({
     return team;
   }),
 
+  // นับ Best 1 / Best 1-2 / Best 1-2-3 (เช่นทีม 3–3, 3–4)
+  setBestN: roundWriteProcedure
+    .input(z.object({ bestN: z.union([z.literal(1), z.literal(2), z.literal(3)]) }))
+    .mutation(async ({ ctx, input }) => {
+      const bet = await ctx.db.bet.findFirst({
+        where: { roundId: ctx.round.id, mode: "TEAM" },
+        orderBy: { order: "asc" },
+        select: { id: true, config: true },
+      });
+      if (!bet) throw new TRPCError({ code: "NOT_FOUND", message: "ไม่พบเดิมพันทีม" });
+      const prev =
+        bet.config && typeof bet.config === "object" && !Array.isArray(bet.config)
+          ? bet.config
+          : {};
+      await ctx.db.bet.update({
+        where: { id: bet.id },
+        data: { config: { ...prev, bestN: input.bestN } },
+      });
+      await touchRound(ctx.db, ctx.round.id);
+      return { ok: true as const };
+    }),
+
   rename: roundWriteProcedure
     .input(z.object({ teamId: z.string(), name: z.string().min(1).max(40) }))
     .mutation(async ({ ctx, input }) => {

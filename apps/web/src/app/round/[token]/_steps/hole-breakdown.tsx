@@ -42,8 +42,9 @@ export function HoleBreakdown({
   const colorOf = (id: string) =>
     teams.find((t) => t.id === id)?.color ?? "#1B5E20";
 
-  const best1 = detail.games.filter((g) => g.rank === 0);
-  const best2 = detail.games.filter((g) => g.rank === 1);
+  // one section per rank that was played (Best 1 / 1-2 / 1-2-3)
+  const ranks = [...new Set(detail.games.map((g) => g.rank))].sort((a, b) => a - b);
+  const RANK_SUB = ["ต่ำสุดแต่ละทีม", "ต่ำอันดับ 2", "ต่ำอันดับ 3"];
 
   const side = (
     teamId: string,
@@ -171,14 +172,25 @@ export function HoleBreakdown({
       ) : (
         <div className="text-[11px] text-black/30">{emptyText}</div>
       )}
-      {games.length > 0 && renderSum(games, label === "BEST 1" ? "Best 1" : "Best 2")}
+      {games.length > 0 && renderSum(games, label)}
     </div>
   );
 
   return (
     <div className="space-y-3">
-      {group("BEST 1", "ต่ำสุดแต่ละทีม", best1, "ยังไม่มีข้อมูล")}
-      {group("BEST 2", "ต่ำอันดับ 2", best2, "ไม่มีคู่เทียบ (คนไม่พอ)")}
+      {ranks.length === 0 && (
+        <div className="text-[11px] text-black/30">ยังไม่มีข้อมูล</div>
+      )}
+      {ranks.map((rk) => (
+        <div key={rk}>
+          {group(
+            `BEST ${rk + 1}`,
+            RANK_SUB[rk] ?? "",
+            detail.games.filter((g) => g.rank === rk),
+            "ไม่มีคู่เทียบ (คนไม่พอ)",
+          )}
+        </div>
+      ))}
       {detail.turbo && (
         <div className="rounded-md bg-[#C9A227]/10 px-2 py-1 text-[11px] text-[#9a7d1f]">
           ⚡ TURBO ×2 — point หลุมนี้คูณสอง

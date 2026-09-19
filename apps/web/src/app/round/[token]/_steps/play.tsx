@@ -5,11 +5,12 @@ import type { Par } from "@yordor/engine";
 import { useState } from "react";
 
 import { Button, Card, cx } from "~/app/_ui";
-import { GAME_LABEL, computeGroups } from "~/lib/group-input";
-import { buildTeamInput, teamBets } from "~/lib/team-input";
+import { computeGroups } from "~/lib/group-input";
+import { betBestN, buildTeamInput, teamBets } from "~/lib/team-input";
 import { api } from "~/trpc/react";
 
 import type { RoundData } from "../round-flow";
+import { GroupGameHeader, GroupHoleBreakdown } from "./group-breakdown";
 import { HoleBreakdown } from "./hole-breakdown";
 
 export function PlayStep({
@@ -59,6 +60,7 @@ export function PlayStep({
 
   const [idx, setIdx] = useState(0);
   const [open, setOpen] = useState(false);
+  const [openGroups, setOpenGroups] = useState(true);
 
   const holes = round.holes;
   const hole = holes[idx];
@@ -76,7 +78,7 @@ export function PlayStep({
   // live preview (client-side engine — same package as server result.get)
   const bet = teamBets(round)[0];
   const preview = bet
-    ? computeTeam(...inputTuple(round, bet))
+    ? computeTeam(...inputTuple(round, bet), { bestN: betBestN(bet) })
     : null;
   const holeDetail = preview?.holeLog[idx];
 
@@ -263,12 +265,20 @@ export function PlayStep({
         </Card>
       )}
 
-      {/* วงส่วนตัว live */}
+      {/* วงส่วนตัว live — วิธีคิดแยกแต่ละวง/เกม */}
       {groupCalc.games.length > 0 && (
-        <Card className="space-y-2">
-          <span className="text-xs font-semibold text-black/40">
-            วงส่วนตัว · รวมสุทธิต่อคน
-          </span>
+        <Card className="space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-black/40">
+              วงส่วนตัว · รวมสุทธิต่อคน
+            </span>
+            <button
+              onClick={() => setOpenGroups((o) => !o)}
+              className="text-xs text-[#1B5E20]"
+            >
+              {openGroups ? "ซ่อนวิธีคิด" : "วิธีคิดแต่ละวง ▾"}
+            </button>
+          </div>
           <div className="flex flex-wrap gap-x-3 gap-y-1">
             {round.players
               .filter((p) => p.id in groupCalc.playerTotals)
@@ -288,31 +298,16 @@ export function PlayStep({
                 );
               })}
           </div>
-          {open && (
-            <div className="space-y-1.5 border-t border-black/5 pt-2 text-[11px] text-black/60">
-              {groupCalc.games.map((g) => {
-                const transfers = g.holeLog[idx]?.transfers ?? [];
-                return (
-                  <div key={`${g.groupId}-${g.game}`}>
-                    <span className="font-bold text-black/50">
-                      {g.groupName} · {GAME_LABEL[g.game]}
-                    </span>
-                    {transfers.length === 0 ? (
-                      <span className="text-black/30"> — ไม่มีการจ่าย</span>
-                    ) : (
-                      transfers.map((t, i) => (
-                        <p key={i}>
-                          {nameOf(t.from)} จ่าย {nameOf(t.to)}{" "}
-                          <b className="text-[#1B5E20]">{t.pts}</b>
-                          {t.bonus ? ` (${t.bonus})` : ""}
-                        </p>
-                      ))
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
+          {openGroups &&
+            groupCalc.games.map((g) => (
+              <div
+                key={`${g.groupId}-${g.game}`}
+                className="space-y-1.5 border-t border-black/5 pt-2"
+              >
+                <GroupGameHeader game={g} nameOf={nameOf} />
+                <GroupHoleBreakdown game={g} holeIndex={idx} nameOf={nameOf} />
+              </div>
+            ))}
         </Card>
       )}
 

@@ -43,8 +43,15 @@ export interface RoundBet {
   id: string;
   mode: string;
   name: string;
+  config?: unknown; // { bestN: 1|2|3, ... }
   teams: RoundTeam[];
   players: RoundBetPlayer[];
+}
+
+/** Best 1 / 1-2 / 1-2-3 from Bet.config (default 2). */
+export function betBestN(bet: Pick<RoundBet, "config">): 1 | 2 | 3 {
+  const n = (bet.config as { bestN?: unknown } | null | undefined)?.bestN;
+  return n === 1 || n === 3 ? n : 2;
 }
 export interface RoundForEngine {
   holes: RoundHole[];

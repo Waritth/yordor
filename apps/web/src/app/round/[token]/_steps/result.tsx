@@ -8,6 +8,7 @@ import { GAME_LABEL } from "~/lib/group-input";
 import { api } from "~/trpc/react";
 
 import type { RoundData } from "../round-flow";
+import { GroupHoleBreakdown } from "./group-breakdown";
 import { HoleBreakdown } from "./hole-breakdown";
 
 export function ResultStep({
@@ -30,6 +31,7 @@ export function ResultStep({
 
   const [copied, setCopied] = useState(false);
   const [openHole, setOpenHole] = useState<number | null>(null);
+  const [openGroup, setOpenGroup] = useState<string | null>(null);
   const [shareUrl, setShareUrl] = useState("");
 
   useEffect(() => {
@@ -71,7 +73,8 @@ export function ResultStep({
           return (
             <Card key={bet.betId} className="space-y-3">
               <p className="text-xs font-semibold text-black/40">
-                เดิมพัน: {bet.name}
+                เดิมพัน: {bet.name} ·{" "}
+                {["Best 1", "Best 1-2", "Best 1-2-3"][bet.bestN - 1]}
               </p>
               <div className="space-y-1">
                 {ranked.map((t, i) => {
@@ -169,6 +172,31 @@ export function ResultStep({
                         <span className="font-semibold">{d.pts}</span>
                       </p>
                     ))}
+                  </div>
+                )}
+                <button
+                  onClick={() =>
+                    setOpenGroup((k) =>
+                      k === `${g.groupId}-${g.game}` ? null : `${g.groupId}-${g.game}`,
+                    )
+                  }
+                  className="text-xs text-[#1B5E20]"
+                >
+                  {openGroup === `${g.groupId}-${g.game}` ? "ซ่อนรายหลุม" : "วิธีคิดรายหลุม ▾"}
+                </button>
+                {openGroup === `${g.groupId}-${g.game}` && (
+                  <div className="space-y-2">
+                    {g.holeLog
+                      .filter((h) => Object.values(h.nets).some((n) => n != null))
+                      .map((h) => (
+                        <div key={h.holeIndex} className="border-t border-black/5 pt-1.5">
+                          <p className="text-[11px] font-semibold text-black/50">
+                            หลุม {h.holeIndex + 1} · Par {h.par}
+                            {h.turbo ? " · ⚡" : ""}
+                          </p>
+                          <GroupHoleBreakdown game={g} holeIndex={h.holeIndex} nameOf={nameOf} />
+                        </div>
+                      ))}
                   </div>
                 )}
               </Card>

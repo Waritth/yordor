@@ -1,7 +1,7 @@
 import { computeTeam } from "@yordor/engine";
 
 import { computeGroups } from "~/lib/group-input";
-import { buildTeamInput, teamBets } from "~/lib/team-input";
+import { betBestN, buildTeamInput, teamBets } from "~/lib/team-input";
 import { createTRPCRouter, roundProcedure } from "~/server/api/trpc";
 
 const roundInclude = {
@@ -31,10 +31,12 @@ export const resultRouter = createTRPCRouter({
 
     const teamResults = teamBets(round).map((bet) => {
       const input = buildTeamInput(round, bet);
-      const r = computeTeam(input.teams, input.holes, input.scores);
+      const bestN = betBestN(bet);
+      const r = computeTeam(input.teams, input.holes, input.scores, { bestN });
       return {
         betId: bet.id,
         name: bet.name,
+        bestN,
         teams: bet.teams.map((t) => ({
           id: t.id,
           name: t.name,

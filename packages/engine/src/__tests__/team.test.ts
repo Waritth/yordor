@@ -71,3 +71,40 @@ describe("§4 Team mode (golden)", () => {
     expect(sum(r.totals)).toBe(0);
   });
 });
+
+describe("Best N (1 / 1-2 / 1-2-3)", () => {
+  const P4: Hole[] = [{ par: 4, turbo: false }];
+  const six: Scores = { a1: [3], a2: [4], a3: [5], b1: [4], b2: [4], b3: [6] };
+  const t33: Team[] = [
+    { id: "A", players: [pl("a1"), pl("a2"), pl("a3")] },
+    { id: "B", players: [pl("b1"), pl("b2"), pl("b3")] },
+  ];
+
+  it("bestN=1 → only Best1 counts (07 §4.1 → A +2)", () => {
+    const r = computeTeam(AB(), P4, { som: [3], lek: [5], joe: [4], kan: [6] }, { bestN: 1 });
+    expect(r.totals).toEqual({ A: 2, B: -2 });
+  });
+
+  it("default = Best 1-2 (unchanged)", () => {
+    const r = computeTeam(AB(), P4, { som: [3], lek: [5], joe: [4], kan: [6] });
+    expect(r.totals).toEqual({ A: 3, B: -3 });
+  });
+
+  it("bestN=3, 3 v 3: Best1 birdie 2 + Best2 tie + Best3 1 → A +3", () => {
+    const r = computeTeam(t33, P4, six, { bestN: 3 });
+    expect(r.totals).toEqual({ A: 3, B: -3 });
+    expect(r.holeLog[0]!.games.map((g) => g.rank)).toEqual([0, 1, 2]);
+  });
+
+  it("bestN=3, 3 v 4: ranks by net, 4th player just widens the pool", () => {
+    const t34: Team[] = [t33[0]!, { id: "B", players: [...t33[1]!.players, pl("b4")] }];
+    // b4=3 → B ranked [3,4,4,6]: Best1 3v3 tie, Best2 4v4 tie, Best3 5v4 → B +1
+    const r = computeTeam(t34, P4, { ...six, b4: [3] }, { bestN: 3 });
+    expect(r.totals).toEqual({ A: -1, B: 1 });
+  });
+
+  it("bestN=3 but a team has 2 players → Best3 skipped", () => {
+    const r = computeTeam(AB(), P4, { som: [3], lek: [5], joe: [4], kan: [6] }, { bestN: 3 });
+    expect(r.totals).toEqual({ A: 3, B: -3 });
+  });
+});

@@ -68,7 +68,11 @@ export function computeTeam(
   teams: Team[],
   holes: Hole[],
   scores: Scores,
+  opts: { bestN?: number } = {},
 ): ComputeResult {
+  // Best 1 / Best 1-2 / Best 1-2-3 (default 2). A rank a team can't fill is skipped.
+  const bestN = Math.min(3, Math.max(1, Math.floor(opts.bestN ?? 2)));
+  const ranks = Array.from({ length: bestN }, (_, i) => i);
   const totals: Record<string, number> = {};
   const matrix: Record<string, Record<string, number>> = {};
   for (const t of teams) {
@@ -96,7 +100,7 @@ export function computeTeam(
       for (let j = i + 1; j < teams.length; j++) {
         const A = teams[i]!;
         const B = teams[j]!;
-        for (const rank of [0, 1]) {
+        for (const rank of ranks) {
           const a = ranked.get(A.id)?.[rank];
           const b = ranked.get(B.id)?.[rank];
           const aNet = a?.net ?? null;
