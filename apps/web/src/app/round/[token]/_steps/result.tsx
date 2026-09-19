@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import QRCode from "react-qr-code";
 
 import { Button, Card, Section, cx } from "~/app/_ui";
+import { GAME_LABEL } from "~/lib/group-input";
 import { api } from "~/trpc/react";
 
 import type { RoundData } from "../round-flow";
@@ -116,6 +117,93 @@ export function ResultStep({
           );
         })}
       </Section>
+
+      {/* วงส่วนตัว — player-level, kept apart from the team table */}
+      {(data?.groupResults.length ?? 0) > 0 && (
+        <Section title="วงส่วนตัว" subtitle="แยกต่อวงต่อเกม · ไม่ปนกับแต้มทีม">
+          {data!.groupResults.map((g) => {
+            const nameOf = (id: string) =>
+              round.players.find((p) => p.id === id)?.name ?? "ผู้เล่น";
+            const ranked = [...g.playerIds].sort(
+              (a, b) => (g.totals[b] ?? 0) - (g.totals[a] ?? 0),
+            );
+            // net each pair so the list reads "X จ่าย Y n"
+            const debts: { from: string; to: string; pts: number }[] = [];
+            for (let i = 0; i < g.playerIds.length; i++)
+              for (let j = i + 1; j < g.playerIds.length; j++) {
+                const a = g.playerIds[i]!;
+                const b = g.playerIds[j]!;
+                const d = (g.matrix[a]?.[b] ?? 0) - (g.matrix[b]?.[a] ?? 0);
+                if (d > 0) debts.push({ from: a, to: b, pts: d });
+                if (d < 0) debts.push({ from: b, to: a, pts: -d });
+              }
+            return (
+              <Card key={`${g.groupId}-${g.game}`} className="space-y-2">
+                <p className="text-xs font-semibold text-black/40">
+                  {g.groupName} · {GAME_LABEL[g.game]}
+                </p>
+                <div className="space-y-1">
+                  {ranked.map((id, i) => {
+                    const v = g.totals[id] ?? 0;
+                    return (
+                      <div key={id} className="flex items-center gap-2 text-sm">
+                        <span className="w-5 text-black/30">#{i + 1}</span>
+                        <span className="flex-1 font-medium">{nameOf(id)}</span>
+                        <span
+                          className={cx(
+                            "font-bold tabular-nums",
+                            v > 0 ? "text-green-600" : v < 0 ? "text-red-500" : "text-black/40",
+                          )}
+                        >
+                          {v > 0 ? `+${v}` : v}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+                {debts.length > 0 && (
+                  <div className="border-t border-black/5 pt-2 text-xs text-black/60">
+                    {debts.map((d, i) => (
+                      <p key={i}>
+                        {nameOf(d.from)} จ่าย {nameOf(d.to)}{" "}
+                        <span className="font-semibold">{d.pts}</span>
+                      </p>
+                    ))}
+                  </div>
+                )}
+              </Card>
+            );
+          })}
+
+          <Card className="space-y-1">
+            <p className="text-xs font-semibold text-black/40">
+              รวมสุทธิต่อคน (ทุกวง)
+            </p>
+            {round.players
+              .filter((p) => p.id in (data?.playerTotals ?? {}))
+              .sort(
+                (a, b) =>
+                  (data!.playerTotals[b.id] ?? 0) - (data!.playerTotals[a.id] ?? 0),
+              )
+              .map((p) => {
+                const v = data!.playerTotals[p.id] ?? 0;
+                return (
+                  <div key={p.id} className="flex items-center text-sm">
+                    <span className="flex-1 font-medium">{p.name}</span>
+                    <span
+                      className={cx(
+                        "font-bold tabular-nums",
+                        v > 0 ? "text-green-600" : v < 0 ? "text-red-500" : "text-black/40",
+                      )}
+                    >
+                      {v > 0 ? `+${v}` : v}
+                    </span>
+                  </div>
+                );
+              })}
+          </Card>
+        </Section>
+      )}
 
       {/* per-hole log — tap a hole to expand the Best1/Best2 breakdown */}
       {teamResults[0] && (

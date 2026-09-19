@@ -4,6 +4,7 @@ import { Button, Card, Section, cx } from "~/app/_ui";
 import { api } from "~/trpc/react";
 
 import type { RoundData } from "../round-flow";
+import { RunnersCard } from "./runners-card";
 
 type Player = RoundData["players"][number];
 
@@ -33,7 +34,9 @@ export function SetupStep({
   const memberOf = new Map<string, string | null>();
   for (const bp of bet?.players ?? []) memberOf.set(bp.playerId, bp.teamId);
   const playersOf = (teamId: string) =>
-    round.players.filter((p) => memberOf.get(p.id) === teamId);
+    round.players.filter(
+      (p) => p.mainRole === "MEMBER" && memberOf.get(p.id) === teamId,
+    );
 
   const commitHcp = (p: Player, par: 3 | 4 | 5, raw: string) => {
     const v = Number.parseFloat(raw);
@@ -58,7 +61,10 @@ export function SetupStep({
     teams.every((t) => {
       const ps = playersOf(t.id);
       return ps.length >= 1 && ps.every((p) => p.name.trim() !== "");
-    });
+    }) &&
+    round.players
+      .filter((p) => p.mainRole !== "MEMBER")
+      .every((p) => p.name.trim() !== "");
 
   return (
     <div className="space-y-6">
@@ -192,9 +198,11 @@ export function SetupStep({
         </div>
       </Section>
 
+      <RunnersCard token={token} round={round} teams={teams} />
+
       <div className="space-y-1">
         <Button className="w-full" disabled={!ready} onClick={onNext}>
-          เริ่มเล่น →
+          วงส่วนตัว →
         </Button>
         {!ready && (
           <p className="text-center text-xs text-black/40">

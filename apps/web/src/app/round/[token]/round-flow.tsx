@@ -8,6 +8,7 @@ import { cx } from "~/app/_ui";
 import { api, type RouterOutputs } from "~/trpc/react";
 
 import { CardFlow } from "./_card/card-flow";
+import { GroupsStep } from "./_steps/groups";
 import { PlayStep } from "./_steps/play";
 import { ResultStep } from "./_steps/result";
 import { SetupStep } from "./_steps/setup";
@@ -16,6 +17,7 @@ export type RoundData = NonNullable<RouterOutputs["round"]["get"]>;
 
 const STEPS = [
   { key: "setup", label: "ตั้งค่า" },
+  { key: "groups", label: "วง" },
   { key: "play", label: "เล่น" },
   { key: "result", label: "ผล" },
 ] as const;
@@ -107,7 +109,15 @@ export function RoundFlow({ token }: { token: string }) {
       </nav>
 
       {step === "setup" && (
-        <SetupStep token={token} round={round} onNext={() => setStep("play")} />
+        <SetupStep token={token} round={round} onNext={() => setStep("groups")} />
+      )}
+      {step === "groups" && (
+        <GroupsStep
+          token={token}
+          round={round}
+          onBack={() => setStep("setup")}
+          onNext={() => setStep("play")}
+        />
       )}
       {step === "play" && (
         <PlayStep

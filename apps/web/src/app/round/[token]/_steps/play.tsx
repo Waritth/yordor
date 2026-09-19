@@ -5,6 +5,7 @@ import type { Par } from "@yordor/engine";
 import { useState } from "react";
 
 import { Button, Card, cx } from "~/app/_ui";
+import { GAME_LABEL, computeGroups } from "~/lib/group-input";
 import { buildTeamInput, teamBets } from "~/lib/team-input";
 import { api } from "~/trpc/react";
 
@@ -78,6 +79,34 @@ export function PlayStep({
     ? computeTeam(...inputTuple(round, bet))
     : null;
   const holeDetail = preview?.holeLog[idx];
+
+  // วงส่วนตัว — live, same scores (client-side engine)
+  const groupCalc = computeGroups(round);
+  const nameOf = (id: string) =>
+    round.players.find((x) => x.id === id)?.name ?? "ผู้เล่น";
+
+  // ตัววิ่ง: which team on this hole · OFF: side games only
+  const roleBadge = (p: (typeof round.players)[number]) => {
+    if (p.mainRole === "MEMBER") return null;
+    if (p.mainRole === "OFF")
+      return (
+        <span className="shrink-0 rounded-full bg-black/5 px-1.5 py-0.5 text-[10px] text-black/40">
+          ส่วนตัว
+        </span>
+      );
+    const seg = round.runnerSegments.find(
+      (x) => x.playerId === p.id && x.fromHole <= idx + 1 && idx + 1 <= x.toHole,
+    );
+    const team = seg && bet?.teams.find((t) => t.id === seg.teamId);
+    return (
+      <span
+        className="shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-semibold text-white"
+        style={{ backgroundColor: team?.color ?? "#9ca3af" }}
+      >
+        🏃 {team?.name ?? "พัก"}
+      </span>
+    );
+  };
 
   const commitScore = (playerId: string, raw: string) => {
     const trimmed = raw.trim();
@@ -168,8 +197,9 @@ export function PlayStep({
               key={p.id}
               className="flex items-center gap-3 border-b border-black/5 py-1.5 last:border-0"
             >
-              <span className="flex-1 truncate text-sm font-medium">
-                {p.name}
+              <span className="flex min-w-0 flex-1 items-center gap-1.5 text-sm font-medium">
+                <span className="truncate">{p.name}</span>
+                {roleBadge(p)}
               </span>
               <span className="w-16 text-right text-xs text-black/40">
                 {n === null ? "—" : `net ${n}`}
@@ -228,6 +258,59 @@ export function PlayStep({
           {open && holeDetail && (
             <div className="border-t border-black/5 pt-2">
               <HoleBreakdown detail={holeDetail} teams={bet.teams} />
+            </div>
+          )}
+        </Card>
+      )}
+
+      {/* วงส่วนตัว live */}
+      {groupCalc.games.length > 0 && (
+        <Card className="space-y-2">
+          <span className="text-xs font-semibold text-black/40">
+            วงส่วนตัว · รวมสุทธิต่อคน
+          </span>
+          <div className="flex flex-wrap gap-x-3 gap-y-1">
+            {round.players
+              .filter((p) => p.id in groupCalc.playerTotals)
+              .map((p) => {
+                const v = groupCalc.playerTotals[p.id] ?? 0;
+                return (
+                  <span key={p.id} className="text-sm font-semibold">
+                    {p.name}{" "}
+                    <span
+                      className={cx(
+                        v > 0 ? "text-green-600" : v < 0 ? "text-red-500" : "text-black/40",
+                      )}
+                    >
+                      {fmt(v)}
+                    </span>
+                  </span>
+                );
+              })}
+          </div>
+          {open && (
+            <div className="space-y-1.5 border-t border-black/5 pt-2 text-[11px] text-black/60">
+              {groupCalc.games.map((g) => {
+                const transfers = g.holeLog[idx]?.transfers ?? [];
+                return (
+                  <div key={`${g.groupId}-${g.game}`}>
+                    <span className="font-bold text-black/50">
+                      {g.groupName} · {GAME_LABEL[g.game]}
+                    </span>
+                    {transfers.length === 0 ? (
+                      <span className="text-black/30"> — ไม่มีการจ่าย</span>
+                    ) : (
+                      transfers.map((t, i) => (
+                        <p key={i}>
+                          {nameOf(t.from)} จ่าย {nameOf(t.to)}{" "}
+                          <b className="text-[#1B5E20]">{t.pts}</b>
+                          {t.bonus ? ` (${t.bonus})` : ""}
+                        </p>
+                      ))
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </Card>
