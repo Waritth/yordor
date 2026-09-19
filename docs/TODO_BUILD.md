@@ -105,6 +105,21 @@
 - [x] เชื่อม sync เดิม (`round.live`) + รอบล่าสุด localStorage โชว์ชื่อเกม
 - [x] **เช็ค:** ลงหลายตา reject ตา Σ≠0 ได้, ยอดสะสมถูก, 2 device sync, golden test เขียว
 
+## R — ตัววิ่ง + วงส่วนตัว (Runner + Groups)
+อ้างอิง: `RUNNER_GROUPS_SPEC.md` · แทนแผน P4/P5/P7 เดิม (Bet layers/Match/High-Low) · engine + test ก่อน UI
+- [ ] engine: `computeTeam` รองรับสมาชิกรายหลุม (`membersAt` — runner segments) ไม่ regress ของเดิม
+- [ ] engine: `computeGroupMatch()` (นับหลุม round-robin) + `computeHighLow()` + ต่อของวง + bonus/turbo ต่อเกม
+- [ ] engine: `defaultRunnerSchedule()` + `validateSchedule()` (ไม่ซ้อน/อยู่ในช่วงหลุม)
+- [ ] golden test: spec §8 (R1–R5, G1–G7 + invariants) เขียว + golf/card เดิมยังเขียว
+- [ ] schema: `Player.mainRole`, `RunnerSegment`, `Group`, `GroupPlayer` → migration
+- [ ] tRPC: `player.setMainRole`, `runner.setSchedule/autoSchedule`, `group.create/update/remove/setPlayers`
+- [ ] tRPC: `result.get` เพิ่ม `groupResults[]` + `playerTotals`
+- [ ] UI ตั้งค่า: การ์ด "ตัววิ่ง / ไม่เล่นก๊วนใหญ่" + สวิตช์วิ่ง + ตารางวิ่ง (จัดอัตโนมัติ/แก้เอง)
+- [ ] UI สเตป "วง": รายการวง + sheet สร้าง/แก้ (ผู้เล่น, เกม, bonus/turbo, ต่อของวง)
+- [ ] UI เล่น: กรอกทุกคน (รวม OFF) + badge ทีมของตัววิ่งหลุมนั้น + live ยอดทีม/ยอดวง
+- [ ] UI ผล: ตารางทีม + ตารางต่อวงต่อเกม + รวมสุทธิต่อคน + breakdown
+- [ ] **เช็ค:** 5 คน 2 ทีม+ตัววิ่ง 18 หลุม, 7 คน 3 ทีม, ตัววิ่ง 2 คน, คน OFF เล่นแค่วง, 1 คน 2 วง, sync 2 เครื่อง
+
 ## Roadmap+ (หลัง v1 — ยังไม่ติ๊ก)
 - [ ] Skin mode (per-hole pot + carry-over)
 - [ ] User accounts + claim รอบ guest
