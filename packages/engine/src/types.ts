@@ -18,10 +18,18 @@ export interface Hole {
   index?: number;
 }
 
+/** ตัววิ่ง: counts as a member of the team only on holes fromHole..toHole (1-based, inclusive). */
+export interface TeamRunner {
+  player: Player;
+  fromHole: number;
+  toHole: number;
+}
+
 export interface Team {
   id: string;
   name?: string;
   players: Player[];
+  runners?: TeamRunner[];
 }
 
 /**

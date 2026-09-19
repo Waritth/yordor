@@ -10,6 +10,19 @@ export { bonusMult, bonusLabel } from "./bonus";
 export { turboMult } from "./turbo";
 export { teamRanked, compareNet, computeTeam } from "./team";
 export {
+  computeGroupMatch,
+  computeHighLow,
+  type GameOpts,
+  type GroupHoleLog,
+  type GroupResult,
+  type GroupTransfer,
+} from "./group";
+export {
+  defaultRunnerSchedule,
+  validateSchedule,
+  type RunnerSegment,
+} from "./runner";
+export {
   validHand,
   computeCard3,
   settle,

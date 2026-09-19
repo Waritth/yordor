@@ -25,7 +25,15 @@ export function teamRanked(
   holeIdx: number,
 ): RankEntry[] {
   const list: RankEntry[] = [];
-  for (const p of team.players) {
+  // members first, then runners scheduled on this hole (RUNNER_GROUPS_SPEC §3)
+  const hole1 = holeIdx + 1;
+  const members = [
+    ...team.players,
+    ...(team.runners ?? [])
+      .filter((r) => r.fromHole <= hole1 && hole1 <= r.toHole)
+      .map((r) => r.player),
+  ];
+  for (const p of members) {
     const s = scoreAt(scores, p.id, holeIdx);
     const n = net(s, p, par);
     if (n !== null && s !== null) {
