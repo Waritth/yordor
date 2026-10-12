@@ -6,7 +6,7 @@ import { useState } from "react";
 
 import { Button, Card, cx } from "~/app/_ui";
 import { computeGroups } from "~/lib/group-input";
-import { betBestN, buildTeamInput, teamBets } from "~/lib/team-input";
+import { betBestN, betOffPairs, buildTeamInput, teamBets } from "~/lib/team-input";
 import { api } from "~/trpc/react";
 
 import type { RoundData } from "../round-flow";
@@ -78,7 +78,10 @@ export function PlayStep({
   // live preview (client-side engine — same package as server result.get)
   const bet = teamBets(round)[0];
   const preview = bet
-    ? computeTeam(...inputTuple(round, bet), { bestN: betBestN(bet) })
+    ? computeTeam(...inputTuple(round, bet), {
+        bestN: betBestN(bet),
+        offPairs: betOffPairs(bet),
+      })
     : null;
   const holeDetail = preview?.holeLog[idx];
 

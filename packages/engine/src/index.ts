@@ -8,7 +8,7 @@ export * from "./types";
 export { net, scoreAt } from "./net";
 export { bonusMult, bonusLabel } from "./bonus";
 export { turboMult } from "./turbo";
-export { teamRanked, compareNet, computeTeam } from "./team";
+export { teamRanked, compareNet, computeTeam, pairKey } from "./team";
 export {
   computeGroupMatch,
   computeHighLow,

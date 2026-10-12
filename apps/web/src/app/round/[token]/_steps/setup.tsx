@@ -3,7 +3,9 @@
 import { Button, Card, Section, cx } from "~/app/_ui";
 import { api } from "~/trpc/react";
 
-import { betBestN } from "~/lib/team-input";
+import { pairKey } from "@yordor/engine";
+
+import { betBestN, betOffPairs } from "~/lib/team-input";
 
 import type { RoundData } from "../round-flow";
 import { RunnersCard } from "./runners-card";
@@ -37,8 +39,17 @@ export function SetupStep({
     },
   });
 
+  const setPairPlayed = api.team.setPairPlayed.useMutation({
+    onSuccess: () => {
+      void invalidate();
+      void utils.result.get.invalidate({ token });
+    },
+  });
+
   const bet = round.bets.find((b) => b.mode === "TEAM");
   const teams = bet?.teams ?? [];
+  const offPairs = new Set(bet ? betOffPairs(bet) : []);
+  const pairs = teams.flatMap((a, i) => teams.slice(i + 1).map((b) => [a, b] as const));
   const memberOf = new Map<string, string | null>();
   for (const bp of bet?.players ?? []) memberOf.set(bp.playerId, bp.teamId);
   const playersOf = (teamId: string) =>
@@ -120,6 +131,43 @@ export function SetupStep({
             </button>
           ))}
         </Card>
+
+        {teams.length >= 3 && (
+          <Card className="space-y-1.5">
+            <p className="text-xs text-black/50">
+              คู่ที่เล่นกัน — แตะเพื่อปิดคู่ที่ไม่ต่อกัน
+            </p>
+            {pairs.map(([a, b]) => {
+              const played = !offPairs.has(pairKey(a.id, b.id));
+              return (
+                <button
+                  key={`${a.id}-${b.id}`}
+                  onClick={() =>
+                    setPairPlayed.mutate({ token, teamA: a.id, teamB: b.id, played: !played })
+                  }
+                  className={cx(
+                    "flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-sm",
+                    played ? "bg-black/[0.03]" : "bg-transparent opacity-50",
+                  )}
+                >
+                  <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: a.color }} />
+                  <span className={cx("font-semibold", !played && "line-through")}>{a.name}</span>
+                  <span className="text-black/30">⚔</span>
+                  <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: b.color }} />
+                  <span className={cx("font-semibold", !played && "line-through")}>{b.name}</span>
+                  <span
+                    className={cx(
+                      "ml-auto rounded-full px-2 py-0.5 text-[11px] font-semibold",
+                      played ? "bg-[#1B5E20] text-white" : "bg-black/10 text-black/50",
+                    )}
+                  >
+                    {played ? "เล่น" : "ไม่เล่น"}
+                  </span>
+                </button>
+              );
+            })}
+          </Card>
+        )}
 
         <div className="space-y-3">
           {teams.map((t) => {

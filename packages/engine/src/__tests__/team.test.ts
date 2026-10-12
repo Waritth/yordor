@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { compareNet, computeTeam, teamRanked } from "../index";
+import { compareNet, computeTeam, pairKey, teamRanked } from "../index";
 import type { Hole, Scores, Team } from "../index";
 import { m, pl, sum } from "./helpers";
 
@@ -108,3 +108,33 @@ describe("Best N (1 / 1-2 / 1-2-3)", () => {
     expect(r.totals).toEqual({ A: 3, B: -3 });
   });
 });
+
+describe("offPairs — คู่ทีมที่ไม่เล่นกัน", () => {
+  const P4: Hole[] = [{ par: 4, turbo: false }];
+  // A {3,5}  B {4,5}  C {4,6}
+  const sc: Scores = { a1: [3], a2: [5], b1: [4], b2: [5], c1: [4], c2: [6] };
+  const t3: Team[] = [
+    { id: "A", players: [pl("a1"), pl("a2")] },
+    { id: "B", players: [pl("b1"), pl("b2")] },
+    { id: "C", players: [pl("c1"), pl("c2")] },
+  ];
+
+  it("all pairs (round-robin) by default", () => {
+    // A–B: B1 birdie 2, B2 tie → A+2 · A–C: 2 + 1 → A+3 · B–C: tie, 5v6 → B+1
+    const r = computeTeam(t3, P4, sc);
+    expect(r.totals).toEqual({ A: 5, B: -1, C: -4 });
+  });
+
+  it("A–C off → only A–B and B–C count", () => {
+    const r = computeTeam(t3, P4, sc, { offPairs: [pairKey("C", "A")] });
+    expect(r.totals).toEqual({ A: 2, B: -1, C: -1 });
+    expect(m(r, "C", "A")).toBe(0);
+    expect(r.holeLog[0]!.games.some((g) => [g.teamA, g.teamB].sort().join() === "A,C")).toBe(false);
+    expect(sum(r.totals)).toBe(0);
+  });
+
+  it("pairKey is order-independent", () => {
+    expect(pairKey("A", "C")).toBe(pairKey("C", "A"));
+  });
+});
+

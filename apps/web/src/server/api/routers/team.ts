@@ -1,4 +1,5 @@
 import { TRPCError } from "@trpc/server";
+import { pairKey } from "@yordor/engine";
 import { z } from "zod";
 
 import { SLOTS_PER_TEAM } from "~/server/api/routers/round";
@@ -86,6 +87,39 @@ export const teamRouter = createTRPCRouter({
       await ctx.db.bet.update({
         where: { id: bet.id },
         data: { config: { ...prev, bestN: input.bestN } },
+      });
+      await touchRound(ctx.db, ctx.round.id);
+      return { ok: true as const };
+    }),
+
+  // เปิด/ปิดคู่ทีมที่เล่นกัน (เช่น 3 ทีม: A–B, B–C เล่น · A–C ไม่เล่น)
+  setPairPlayed: roundWriteProcedure
+    .input(z.object({ teamA: z.string(), teamB: z.string(), played: z.boolean() }))
+    .mutation(async ({ ctx, input }) => {
+      const bet = await ctx.db.bet.findFirst({
+        where: { roundId: ctx.round.id, mode: "TEAM" },
+        orderBy: { order: "asc" },
+        select: { id: true, config: true, teams: { select: { id: true } } },
+      });
+      if (!bet) throw new TRPCError({ code: "NOT_FOUND", message: "ไม่พบเดิมพันทีม" });
+      const ids = new Set(bet.teams.map((t) => t.id));
+      if (input.teamA === input.teamB || !ids.has(input.teamA) || !ids.has(input.teamB)) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "ไม่พบทีม" });
+      }
+      const prev =
+        bet.config && typeof bet.config === "object" && !Array.isArray(bet.config)
+          ? (bet.config as Record<string, unknown>)
+          : {};
+      const key = pairKey(input.teamA, input.teamB);
+      const current = Array.isArray(prev.offPairs)
+        ? (prev.offPairs as unknown[]).filter((x): x is string => typeof x === "string")
+        : [];
+      const offPairs = input.played
+        ? current.filter((k) => k !== key)
+        : [...new Set([...current, key])];
+      await ctx.db.bet.update({
+        where: { id: bet.id },
+        data: { config: { ...(prev as object), offPairs } },
       });
       await touchRound(ctx.db, ctx.round.id);
       return { ok: true as const };

@@ -45,6 +45,11 @@ export function teamRanked(
   return list;
 }
 
+/** Order-independent key for a team pair (used for offPairs). */
+export function pairKey(a: string, b: string): string {
+  return a < b ? `${a}|${b}` : `${b}|${a}`;
+}
+
 /**
  * Compare two nets (spec §4.2).
  * +1 = A wins, -1 = B wins, 0 = tie, null = ⊘ (missing data, not counted).
@@ -68,8 +73,10 @@ export function computeTeam(
   teams: Team[],
   holes: Hole[],
   scores: Scores,
-  opts: { bestN?: number } = {},
+  opts: { bestN?: number; offPairs?: string[] } = {},
 ): ComputeResult {
+  // team pairs that don't play each other (e.g. 3 teams: A–C off) — key from pairKey()
+  const off = new Set(opts.offPairs ?? []);
   // Best 1 / Best 1-2 / Best 1-2-3 (default 2). A rank a team can't fill is skipped.
   const bestN = Math.min(3, Math.max(1, Math.floor(opts.bestN ?? 2)));
   const ranks = Array.from({ length: bestN }, (_, i) => i);
@@ -100,6 +107,7 @@ export function computeTeam(
       for (let j = i + 1; j < teams.length; j++) {
         const A = teams[i]!;
         const B = teams[j]!;
+        if (off.has(pairKey(A.id, B.id))) continue;
         for (const rank of ranks) {
           const a = ranked.get(A.id)?.[rank];
           const b = ranked.get(B.id)?.[rank];

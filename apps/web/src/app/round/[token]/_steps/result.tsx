@@ -75,6 +75,15 @@ export function ResultStep({
               <p className="text-xs font-semibold text-black/40">
                 เดิมพัน: {bet.name} ·{" "}
                 {["Best 1", "Best 1-2", "Best 1-2-3"][bet.bestN - 1]}
+                {bet.offPairs.length > 0 &&
+                  ` · ไม่เล่นกัน: ${bet.offPairs
+                    .map((k) =>
+                      k
+                        .split("|")
+                        .map((id) => bet.teams.find((t) => t.id === id)?.name ?? "?")
+                        .join("–"),
+                    )
+                    .join(", ")}`}
               </p>
               <div className="space-y-1">
                 {ranked.map((t, i) => {
