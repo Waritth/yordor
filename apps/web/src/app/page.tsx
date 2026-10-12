@@ -157,6 +157,14 @@ export default function Home() {
           ))}
         </div>
 
+        <Link
+          href="/history"
+          className="flex items-center justify-between rounded-2xl border border-black/5 bg-white px-4 py-3 text-sm font-semibold text-[#1B5E20] shadow-sm"
+        >
+          <span>📜 ประวัติรอบที่เล่นแล้ว</span>
+          <span className="text-black/30">กอล์ฟ · ไพ่ ›</span>
+        </Link>
+
         {/* open from link */}
         <Card className="space-y-2">
           <p className="text-sm font-semibold text-black/70">เปิดรอบจากลิงก์</p>

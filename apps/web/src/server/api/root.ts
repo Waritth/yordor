@@ -1,5 +1,6 @@
 import { cardRouter } from "~/server/api/routers/card";
 import { groupRouter } from "~/server/api/routers/group";
+import { historyRouter } from "~/server/api/routers/history";
 import { holeRouter } from "~/server/api/routers/hole";
 import { playerRouter } from "~/server/api/routers/player";
 import { resultRouter } from "~/server/api/routers/result";
@@ -23,6 +24,7 @@ export const appRouter = createTRPCRouter({
   card: cardRouter,
   runner: runnerRouter,
   group: groupRouter,
+  history: historyRouter,
 });
 
 // export type definition of API
