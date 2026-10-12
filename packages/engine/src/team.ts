@@ -26,6 +26,8 @@ export function teamRanked(
   useHcp = true,
 ): RankEntry[] {
   const list: RankEntry[] = [];
+  // tie-break key: the other measure (net when comparing gross, gross when comparing net)
+  const tie = new Map<RankEntry, number>();
   // members first, then runners scheduled on this hole (RUNNER_GROUPS_SPEC §3)
   const hole1 = holeIdx + 1;
   const members = [
@@ -39,11 +41,15 @@ export function teamRanked(
     // useHcp=false → compare gross (pair of teams that don't give handicap)
     const n = useHcp ? net(s, p, par) : s;
     if (n !== null && s !== null) {
-      list.push({ player: p, net: n, gross: s });
+      const e = { player: p, net: n, gross: s };
+      tie.set(e, useHcp ? s : (net(s, p, par) ?? s));
+      list.push(e);
     }
   }
-  // Array.prototype.sort is stable (Node ≥ 11) → deterministic tie-break.
-  list.sort((a, b) => a.net - b.net);
+  // Ties on the compared value break on the other measure, so a team's Best 1 /
+  // Best 2 is the same person in every pair (ต่อ and ไม่ต่อ). Remaining ties keep
+  // input order (stable sort) → deterministic.
+  list.sort((a, b) => a.net - b.net || tie.get(a)! - tie.get(b)!);
   return list;
 }
 

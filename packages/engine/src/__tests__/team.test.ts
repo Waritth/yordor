@@ -151,6 +151,17 @@ describe("noHcpPairs — คู่ทีมที่ไม่ต่อกัน 
     expect(gross.totals).toEqual({ T1: 3, T2: -3 });
   });
 
+  it("gross tie in a ไม่ต่อ pair → same Best1/Best2 person as the handicap pairs", () => {
+    // mu ต่อ 0.5 (g5 → net 5.5), ja ต่อ 0 (g5 → net 5). net: ja is Best1.
+    // gross tie 5/5 → tie-break by net → ja stays Best1 (not mu by input order).
+    const team: Team = { id: "T2", players: [pl("mu", { 4: 0.5 }), pl("ja")] };
+    const s2: Scores = { mu: [5], ja: [5] };
+    const ids = (useHcp: boolean) =>
+      teamRanked(team, 4, s2, 0, useHcp).map((e) => e.player.id);
+    expect(ids(true)).toEqual(["ja", "mu"]);
+    expect(ids(false)).toEqual(["ja", "mu"]);
+  });
+
   it("pairKey is order-independent", () => {
     expect(pairKey("A", "C")).toBe(pairKey("C", "A"));
   });
