@@ -20,8 +20,9 @@ export type GameConfig = GameOpts & { on: boolean };
 // type aliases (not interfaces) so the config is assignable to Prisma Json
 export type GroupConfig = { match: GameConfig; highlow: GameConfig };
 export const DEFAULT_GROUP_CONFIG: GroupConfig = {
-  match: { on: true, bonus: false, turbo: false },
-  highlow: { on: false, bonus: false, turbo: false },
+  // Bonus on by default (Birdie ×2 like the main game); turbo stays opt-in
+  match: { on: true, bonus: true, turbo: false },
+  highlow: { on: false, bonus: true, turbo: false },
 };
 
 export function parseGroupConfig(raw: unknown): GroupConfig {
@@ -68,6 +69,8 @@ export interface GroupGameResult extends GroupResult {
   groupName: string;
   game: GameKey;
   playerIds: string[];
+  bonus: boolean;
+  turbo: boolean;
 }
 
 export function computeGroups(round: RoundForGroups): {
@@ -107,6 +110,8 @@ export function computeGroups(round: RoundForGroups): {
         groupName: g.name,
         game,
         playerIds: members.map((m) => m.id),
+        bonus: cfg[game].bonus,
+        turbo: cfg[game].turbo,
       });
       for (const [pid, v] of Object.entries(r.totals))
         playerTotals[pid] = (playerTotals[pid] ?? 0) + v;

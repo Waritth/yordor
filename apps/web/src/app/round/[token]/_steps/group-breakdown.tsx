@@ -98,8 +98,21 @@ export function GroupGameHeader({
 }) {
   return (
     <div className="space-y-0.5">
-      <p className="text-xs font-bold text-[#9a7d1f]">
+      <p className="flex flex-wrap items-center gap-1 text-xs font-bold text-[#9a7d1f]">
         {game.groupName} · {GAME_LABEL[game.game]}
+        <span
+          className={cx(
+            "rounded px-1 text-[10px] font-semibold",
+            game.bonus ? "bg-[#1B5E20]/10 text-[#1B5E20]" : "bg-black/5 text-black/40",
+          )}
+        >
+          {game.bonus ? "Bonus เปิด" : "ไม่มี Bonus"}
+        </span>
+        {game.turbo && (
+          <span className="rounded bg-[#C9A227]/15 px-1 text-[10px] font-semibold text-[#9a7d1f]">
+            ⚡Turbo
+          </span>
+        )}
       </p>
       <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs">
         {game.playerIds.map((id) => (

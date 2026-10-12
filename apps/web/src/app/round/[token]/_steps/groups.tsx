@@ -169,6 +169,9 @@ export function GroupsStep({
                     ))}
                   </div>
                 ))}
+                <p className="text-[11px] text-black/40">
+                  Bonus = Birdie ×2 · Eagle ×3 · Albatross ×5 (จากสกอร์จริงของคนชนะ) · Turbo = หลุม Turbo ×2
+                </p>
 
                 {/* per-group handicap override */}
                 {members.length > 0 && (
