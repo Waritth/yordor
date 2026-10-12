@@ -21,12 +21,24 @@ export function CardFlow({
   token,
   round,
   syncing,
+  onEnter,
 }: {
   token: string;
   round: RoundData;
   syncing: boolean;
+  onEnter: (step: string) => void;
 }) {
   const [step, setStep] = useState<StepKey>("setup");
+  const named = round.players.filter((p) => p.name.trim() !== "").length;
+  // ลงแต้ม/ผล need ≥2 named players — the tabs can't skip setup anymore
+  const goto = (k: StepKey) => {
+    if (k !== "setup" && named < 2) {
+      setStep("setup");
+      return;
+    }
+    onEnter(k);
+    setStep(k);
+  };
 
   return (
     <main className="mx-auto min-h-screen max-w-md bg-[#F7F5EF] px-4 pb-16 pt-4">
@@ -54,7 +66,7 @@ export function CardFlow({
         {STEPS.map((s, i) => (
           <button
             key={s.key}
-            onClick={() => setStep(s.key)}
+            onClick={() => goto(s.key)}
             className={cx(
               "flex-1 rounded-lg py-1.5 text-xs font-semibold transition",
               step === s.key
@@ -68,20 +80,20 @@ export function CardFlow({
       </nav>
 
       {step === "setup" && (
-        <CardSetup token={token} round={round} onNext={() => setStep("play")} />
+        <CardSetup token={token} round={round} onNext={() => goto("play")} />
       )}
       {step === "play" && (
         <CardSheet
           token={token}
           round={round}
-          onResult={() => setStep("result")}
+          onResult={() => goto("result")}
         />
       )}
       {step === "result" && (
         <CardResult
           token={token}
           round={round}
-          onBack={() => setStep("play")}
+          onBack={() => goto("play")}
         />
       )}
     </main>

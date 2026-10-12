@@ -4,6 +4,7 @@ import { validateSchedule, type RunnerSegment } from "@yordor/engine";
 import { useState } from "react";
 
 import { Card, Section, cx } from "~/app/_ui";
+import { playersWithPoints } from "~/lib/player-data";
 import { api } from "~/trpc/react";
 
 import type { RoundData } from "../round-flow";
@@ -33,6 +34,7 @@ export function RunnersCard({
   const setRole = api.player.setMainRole.useMutation({ onSuccess: invalidate });
 
   const extras = round.players.filter((p) => p.mainRole !== "MEMBER");
+  const scored = playersWithPoints(round);
 
   const commitHcp = (p: Player, par: 3 | 4 | 5, raw: string) => {
     const v = Number.parseFloat(raw);
@@ -83,12 +85,18 @@ export function RunnersCard({
                 >
                   🏃 วิ่ง {running ? "เปิด" : "ปิด"}
                 </button>
-                <button
-                  onClick={() => remove.mutate({ token, playerId: p.id })}
-                  className="px-1 text-black/30 hover:text-red-500"
-                >
-                  ✕
-                </button>
+                {scored.has(p.id) ? (
+                  <span title="มีแต้มแล้ว ลบไม่ได้ — เปลี่ยนชื่อแทน" className="px-1 text-xs text-black/25">
+                    🔒
+                  </span>
+                ) : (
+                  <button
+                    onClick={() => remove.mutate({ token, playerId: p.id })}
+                    className="px-1 text-black/30 hover:text-red-500"
+                  >
+                    ✕
+                  </button>
+                )}
               </div>
 
               <div className="flex items-center gap-1.5">

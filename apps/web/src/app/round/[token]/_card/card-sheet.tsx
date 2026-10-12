@@ -6,6 +6,8 @@ import { useState } from "react";
 import { Button, Card, Section, cx } from "~/app/_ui";
 import { api } from "~/trpc/react";
 
+import { activePlayers } from "~/lib/player-data";
+
 import type { RoundData } from "../round-flow";
 import { CardHandEntry, CardHandFields } from "./card-hand-entry";
 
@@ -43,7 +45,7 @@ export function CardSheet({
     },
   });
 
-  const players = round.players;
+  const players = activePlayers(round);
   const hands = round.cardHands;
   const fmt = (n: number) => (n > 0 ? `+${n}` : `${n}`);
 

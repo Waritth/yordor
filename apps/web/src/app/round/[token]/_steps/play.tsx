@@ -6,6 +6,7 @@ import { useState } from "react";
 
 import { Button, Card, cx } from "~/app/_ui";
 import { computeGroups } from "~/lib/group-input";
+import { activePlayers } from "~/lib/player-data";
 import { betBestN, betNoHcpPairs, buildTeamInput, teamBets } from "~/lib/team-input";
 import { api } from "~/trpc/react";
 
@@ -187,7 +188,7 @@ export function PlayStep({
 
       {/* score entry */}
       <Card className="space-y-1">
-        {round.players.map((p) => {
+        {activePlayers(round).map((p) => {
           const gross = scoreOf(p.id);
           const n =
             gross === null

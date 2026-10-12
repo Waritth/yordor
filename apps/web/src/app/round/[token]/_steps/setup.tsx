@@ -5,6 +5,7 @@ import { api } from "~/trpc/react";
 
 import { pairKey } from "@yordor/engine";
 
+import { playersWithPoints } from "~/lib/player-data";
 import { betBestN, betNoHcpPairs } from "~/lib/team-input";
 
 import type { RoundData } from "../round-flow";
@@ -46,6 +47,7 @@ export function SetupStep({
     },
   });
 
+  const scored = playersWithPoints(round);
   const bet = round.bets.find((b) => b.mode === "TEAM");
   const teams = bet?.teams ?? [];
   const noHcpPairs = new Set(bet ? betNoHcpPairs(bet) : []);
@@ -189,7 +191,7 @@ export function SetupStep({
                     }
                     className="flex-1 rounded-lg px-1 py-0.5 text-sm font-bold text-[#1B5E20] outline-none focus:bg-black/5"
                   />
-                  {teams.length > 2 && (
+                  {teams.length > 2 && !ps.some((p) => scored.has(p.id)) && (
                     <button
                       onClick={() => removeTeam.mutate({ token, teamId: t.id })}
                       className="px-1 text-xs text-black/30 hover:text-red-500"
@@ -219,14 +221,23 @@ export function SetupStep({
                           }
                           className="flex-1 rounded-lg border border-black/10 bg-white px-2 py-1.5 text-sm outline-none focus:border-[#1B5E20]"
                         />
-                        <button
-                          onClick={() =>
-                            removePlayer.mutate({ token, playerId: p.id })
-                          }
-                          className="px-1.5 text-black/30 hover:text-red-500"
+                        {scored.has(p.id) ? (
+                          <span
+                          title="มีแต้มแล้ว ลบไม่ได้ — เปลี่ยนชื่อแทน"
+                          className="px-1.5 text-xs text-black/25"
                         >
-                          ✕
-                        </button>
+                          🔒
+                        </span>
+                        ) : (
+                          <button
+                            onClick={() =>
+                              removePlayer.mutate({ token, playerId: p.id })
+                            }
+                            className="px-1.5 text-black/30 hover:text-red-500"
+                          >
+                            ✕
+                          </button>
+                        )}
                       </div>
                       <div className="mt-1.5 flex items-center gap-1.5">
                         <span className="text-xs text-black/40">ต่อ</span>

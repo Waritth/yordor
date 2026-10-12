@@ -6,6 +6,8 @@ import QRCode from "react-qr-code";
 
 import { Button, Card, Section, cx } from "~/app/_ui";
 
+import { activePlayers } from "~/lib/player-data";
+
 import type { RoundData } from "../round-flow";
 
 const pointsOf = (h: RoundData["cardHands"][number]) =>
@@ -26,7 +28,7 @@ export function CardResult({
     setShareUrl(`${window.location.origin}/round/${token}`);
   }, [token]);
 
-  const players = round.players;
+  const players = activePlayers(round);
   const nameOf = (id: string) =>
     players.find((p) => p.id === id)?.name ?? "ผู้เล่น";
 

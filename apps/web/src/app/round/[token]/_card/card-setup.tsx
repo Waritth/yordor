@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { Button, Card, Section } from "~/app/_ui";
+import { playersWithPoints } from "~/lib/player-data";
 import { api } from "~/trpc/react";
 
 import type { RoundData } from "../round-flow";
@@ -29,9 +30,10 @@ export function CardSetup({
   const remove = api.player.remove.useMutation({ onSuccess: invalidate });
   const rename = api.player.rename.useMutation({ onSuccess: invalidate });
 
-  const ready =
-    round.players.length >= 2 &&
-    round.players.every((p) => p.name.trim() !== "");
+  const scored = playersWithPoints(round);
+
+  // blank slots are allowed (pruned when play starts); need ≥2 named players
+  const ready = round.players.filter((p) => p.name.trim() !== "").length >= 2;
 
   return (
     <div className="space-y-6">
@@ -53,12 +55,18 @@ export function CardSetup({
                 }
                 className="flex-1 rounded-lg px-2 py-1 text-sm outline-none focus:bg-black/5"
               />
-              <button
-                onClick={() => remove.mutate({ token, playerId: p.id })}
-                className="px-2 text-black/30 hover:text-red-500"
-              >
-                ✕
-              </button>
+              {scored.has(p.id) ? (
+                <span title="มีแต้มแล้ว ลบไม่ได้ — เปลี่ยนชื่อแทน" className="px-2 text-xs text-black/25">
+                  🔒
+                </span>
+              ) : (
+                <button
+                  onClick={() => remove.mutate({ token, playerId: p.id })}
+                  className="px-2 text-black/30 hover:text-red-500"
+                >
+                  ✕
+                </button>
+              )}
             </Card>
           ))}
           {round.players.length === 0 && (
@@ -98,7 +106,7 @@ export function CardSetup({
         </Button>
         {!ready && (
           <p className="text-center text-xs text-black/40">
-            ต้องมีผู้เล่น ≥2 คน · กรอกชื่อให้ครบ (ลบช่องที่ไม่ใช้)
+            ต้องมีผู้เล่นที่ใส่ชื่อแล้ว ≥2 คน (ช่องว่างจะถูกตัดออกเอง)
           </p>
         )}
       </div>

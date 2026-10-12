@@ -158,6 +158,15 @@ export const teamRouter = createTRPCRouter({
         where: { betId, teamId: input.teamId },
         select: { playerId: true },
       });
+      const scored = await ctx.db.score.count({
+        where: { playerId: { in: members.map((m) => m.playerId) } },
+      });
+      if (scored > 0) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "ทีมนี้มีสกอร์แล้ว ลบทีมไม่ได้",
+        });
+      }
       await ctx.db.$transaction([
         ctx.db.player.deleteMany({
           where: { id: { in: members.map((m) => m.playerId) } },

@@ -115,7 +115,7 @@ export function GroupsStep({
 
                 {/* members */}
                 <div className="flex flex-wrap gap-1.5">
-                  {round.players.map((p) => {
+                  {round.players.filter((p) => p.name.trim() !== "").map((p) => {
                     const on = g.players.some((gp) => gp.playerId === p.id);
                     return (
                       <button

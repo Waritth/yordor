@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 
 import { cx } from "~/app/_ui";
+import { isBlankPrunable } from "~/lib/player-data";
 import { api, type RouterOutputs } from "~/trpc/react";
 
 import { CardFlow } from "./_card/card-flow";
@@ -46,6 +47,13 @@ export function RoundFlow({ token }: { token: string }) {
     },
   );
 
+  const prune = api.player.pruneBlank.useMutation({
+    onSuccess: () => {
+      void utils.round.get.invalidate({ token });
+      void utils.result.get.invalidate({ token });
+    },
+  });
+
   const syncing = useIsMutating() > 0 || roundQuery.isRefetching;
 
   if (roundQuery.isLoading) {
@@ -64,10 +72,20 @@ export function RoundFlow({ token }: { token: string }) {
     );
   }
 
+  // Entering play/result drops unused blank slots (pre-seeded, never named).
+  const go = (k: string) => {
+    if ((k === "play" || k === "result") && isBlankPrunable(round) && !prune.isPending)
+      prune.mutate({ token });
+  };
+
   // ไพ่สามกอง — แยก flow ออกจากกอล์ฟ (ใช้ shell sync เดิมร่วมกัน)
   if (round.gameType === "CARD3") {
-    return <CardFlow token={token} round={round} syncing={syncing} />;
+    return <CardFlow token={token} round={round} syncing={syncing} onEnter={go} />;
   }
+  const goto = (k: StepKey) => {
+    go(k);
+    setStep(k);
+  };
 
   return (
     <main className="mx-auto min-h-screen max-w-md bg-[#F7F5EF] px-4 pb-16 pt-4">
@@ -95,7 +113,7 @@ export function RoundFlow({ token }: { token: string }) {
         {STEPS.map((s, i) => (
           <button
             key={s.key}
-            onClick={() => setStep(s.key)}
+            onClick={() => goto(s.key)}
             className={cx(
               "flex-1 rounded-lg py-1.5 text-xs font-semibold transition",
               step === s.key
@@ -109,21 +127,21 @@ export function RoundFlow({ token }: { token: string }) {
       </nav>
 
       {step === "setup" && (
-        <SetupStep token={token} round={round} onNext={() => setStep("groups")} />
+        <SetupStep token={token} round={round} onNext={() => goto("groups")} />
       )}
       {step === "groups" && (
         <GroupsStep
           token={token}
           round={round}
           onBack={() => setStep("setup")}
-          onNext={() => setStep("play")}
+          onNext={() => goto("play")}
         />
       )}
       {step === "play" && (
         <PlayStep
           token={token}
           round={round}
-          onResult={() => setStep("result")}
+          onResult={() => goto("result")}
         />
       )}
       {step === "result" && (

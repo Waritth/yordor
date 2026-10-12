@@ -108,13 +108,55 @@ export const playerRouter = createTRPCRouter({
       return { ok: true as const };
     }),
 
+  // Players with recorded points can't be removed (it would wipe their scores
+  // and break past card hands' Σ=0) — rename instead.
   remove: roundWriteProcedure
     .input(z.object({ playerId: z.string() }))
     .mutation(async ({ ctx, input }) => {
+      const p = await ctx.db.player.findUnique({
+        where: { id: input.playerId },
+        select: {
+          roundId: true,
+          _count: {
+            select: { scores: true, cardScores: { where: { points: { not: 0 } } } },
+          },
+        },
+      });
+      if (!p || p.roundId !== ctx.round.id) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "ไม่พบผู้เล่น" });
+      }
+      if (p._count.scores + p._count.cardScores > 0) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "ผู้เล่นคนนี้มีแต้มแล้ว ลบไม่ได้ — เปลี่ยนชื่อแทน",
+        });
+      }
       await ctx.db.player.delete({ where: { id: input.playerId } });
       await touchRound(ctx.db, ctx.round.id);
       return { ok: true as const };
     }),
+
+  // Remove blank-named players that have no points (unused pre-seeded slots).
+  pruneBlank: roundWriteProcedure.mutation(async ({ ctx }) => {
+    const players = await ctx.db.player.findMany({
+      where: { roundId: ctx.round.id },
+      select: {
+        id: true,
+        name: true,
+        _count: {
+          select: { scores: true, cardScores: { where: { points: { not: 0 } } } },
+        },
+      },
+    });
+    const ids = players
+      .filter((p) => p.name.trim() === "" && p._count.scores + p._count.cardScores === 0)
+      .map((p) => p.id);
+    if (ids.length > 0) {
+      await ctx.db.player.deleteMany({ where: { id: { in: ids } } });
+      await touchRound(ctx.db, ctx.round.id);
+    }
+    return { removed: ids.length };
+  }),
 
   rename: roundWriteProcedure
     .input(z.object({ playerId: z.string(), name: z.string().max(40) }))
