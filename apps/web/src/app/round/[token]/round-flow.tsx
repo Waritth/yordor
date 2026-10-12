@@ -12,6 +12,7 @@ import { CardFlow } from "./_card/card-flow";
 import { GroupsStep } from "./_steps/groups";
 import { PlayStep } from "./_steps/play";
 import { ResultStep } from "./_steps/result";
+import { ScoresStep } from "./_steps/scores";
 import { SetupStep } from "./_steps/setup";
 
 export type RoundData = NonNullable<RouterOutputs["round"]["get"]>;
@@ -20,6 +21,7 @@ const STEPS = [
   { key: "setup", label: "ตั้งค่า" },
   { key: "groups", label: "วง" },
   { key: "play", label: "เล่น" },
+  { key: "scores", label: "สกอร์" },
   { key: "result", label: "ผล" },
 ] as const;
 export type StepKey = (typeof STEPS)[number]["key"];
@@ -144,6 +146,7 @@ export function RoundFlow({ token }: { token: string }) {
           onResult={() => goto("result")}
         />
       )}
+      {step === "scores" && <ScoresStep token={token} round={round} />}
       {step === "result" && (
         <ResultStep
           token={token}

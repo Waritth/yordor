@@ -61,7 +61,9 @@ export interface GameLog {
   winner: string | null;
   netA: number | null;
   netB: number | null;
-  /** the ranked player's name on each side (for breakdown display) */
+  /** the ranked player on each side (for breakdown / per-player views) */
+  idA: string | null;
+  idB: string | null;
   nameA: string | null;
   nameB: string | null;
   grossA: number | null;

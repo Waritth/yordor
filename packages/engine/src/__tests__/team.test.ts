@@ -134,6 +134,7 @@ describe("noHcpPairs — คู่ทีมที่ไม่ต่อกัน 
     const g13 = r.holeLog[0]!.games.filter((g) => [g.teamA, g.teamB].sort().join() === "T1,T3");
     expect(g13.every((g) => !g.hcp)).toBe(true);
     expect(g13[0]!.netA).toBe(4); // a1 gross, not 4.5
+    expect(g13[0]!.idA).toBe("a1");
   });
 
   it("ranking inside the team follows gross for a no-handicap pair", () => {

@@ -8,7 +8,8 @@ export default async function RoundPage({
   params: Promise<{ token: string }>;
 }) {
   const { token } = await params;
-  void api.round.get.prefetch({ token });
+  // await: SSR must render with the round, or hydration mismatches the "loading" markup
+  await api.round.get.prefetch({ token });
   void api.result.get.prefetch({ token });
   return (
     <HydrateClient>
