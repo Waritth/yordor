@@ -2,7 +2,7 @@
 
 import { computeTeam, net as engineNet } from "@yordor/engine";
 import type { Par } from "@yordor/engine";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Button, Card, cx } from "~/app/_ui";
 import { computeGroups } from "~/lib/group-input";
@@ -59,9 +59,29 @@ export function PlayStep({
   const setPar = api.hole.setPar.useMutation({ onSuccess: invalidate });
   const setTurbo = api.hole.setTurbo.useMutation({ onSuccess: invalidate });
 
-  const [idx, setIdx] = useState(0);
+  // open on the first hole someone still has to fill (resume mid-round)
+  const [idx, setIdx] = useState(() => {
+    const ps = activePlayers(round);
+    if (ps.length === 0) return 0;
+    const i = round.holes.findIndex((h) =>
+      ps.some((p) => !round.scores.some((s) => s.playerId === p.id && s.holeId === h.id)),
+    );
+    return i < 0 ? Math.max(0, round.holes.length - 1) : i;
+  });
   const [open, setOpen] = useState(false);
   const [openGroups, setOpenGroups] = useState(true);
+
+  // keep the active hole visible in the strip
+  const stripRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const strip = stripRef.current;
+    const el = strip?.querySelector<HTMLElement>(`[data-hole="${idx}"]`);
+    if (!strip || !el) return;
+    // scroll only the strip (not the page) so the active hole sits in the middle
+    strip.scrollTo({
+      left: el.offsetLeft - strip.clientWidth / 2 + el.clientWidth / 2,
+    });
+  }, [idx]);
 
   const holes = round.holes;
   const hole = holes[idx];
@@ -123,8 +143,48 @@ export function PlayStep({
     setScore.mutate({ token, playerId, holeId: hole.id, strokes });
   };
 
+  const stripPlayers = activePlayers(round);
+  const entered = (holeId: string) =>
+    stripPlayers.filter((p) =>
+      round.scores.some((s) => s.playerId === p.id && s.holeId === holeId),
+    ).length;
+
   return (
     <div className="space-y-5">
+      {/* hole strip — tap to jump */}
+      <div
+        ref={stripRef}
+        className="relative -mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
+        {holes.map((h, i) => {
+          const n = entered(h.id);
+          const done = n > 0 && n === stripPlayers.length;
+          const partial = n > 0 && !done;
+          return (
+            <button
+              key={h.id}
+              data-hole={i}
+              onClick={() => setIdx(i)}
+              className={cx(
+                "flex h-11 w-10 shrink-0 flex-col items-center justify-center rounded-lg text-sm font-bold transition",
+                i === idx
+                  ? "bg-[#1B5E20] text-white shadow"
+                  : done
+                    ? "bg-[#1B5E20]/10 text-[#1B5E20]"
+                    : partial
+                      ? "bg-[#C9A227]/20 text-[#9a7d1f]"
+                      : "border border-black/5 bg-white text-black/40",
+              )}
+            >
+              {i + 1}
+              <span className="text-[9px] font-normal leading-none opacity-70">
+                {h.turboOn ? "⚡" : `P${h.par}`}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
       {/* hole nav */}
       <Card className="space-y-3">
         <div className="flex items-center justify-between">
