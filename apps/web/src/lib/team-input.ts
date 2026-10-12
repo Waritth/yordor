@@ -53,9 +53,9 @@ export function betBestN(bet: Pick<RoundBet, "config">): 1 | 2 | 3 {
   const n = (bet.config as { bestN?: unknown } | null | undefined)?.bestN;
   return n === 1 || n === 3 ? n : 2;
 }
-/** Team pairs that don't play each other (Bet.config.offPairs, keys from pairKey). */
-export function betOffPairs(bet: Pick<RoundBet, "config">): string[] {
-  const v = (bet.config as { offPairs?: unknown } | null | undefined)?.offPairs;
+/** Team pairs that play WITHOUT handicap — compare gross (Bet.config.noHcpPairs, keys from pairKey). */
+export function betNoHcpPairs(bet: Pick<RoundBet, "config">): string[] {
+  const v = (bet.config as { noHcpPairs?: unknown } | null | undefined)?.noHcpPairs;
   return Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : [];
 }
 

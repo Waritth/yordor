@@ -92,9 +92,9 @@ export const teamRouter = createTRPCRouter({
       return { ok: true as const };
     }),
 
-  // เปิด/ปิดคู่ทีมที่เล่นกัน (เช่น 3 ทีม: A–B, B–C เล่น · A–C ไม่เล่น)
-  setPairPlayed: roundWriteProcedure
-    .input(z.object({ teamA: z.string(), teamB: z.string(), played: z.boolean() }))
+  // แต้มต่อระหว่างคู่ทีม: hcp=false → คู่นี้เทียบ gross (เช่น 3 ทีม: ทีม 1–3 ไม่ต่อกัน)
+  setPairHcp: roundWriteProcedure
+    .input(z.object({ teamA: z.string(), teamB: z.string(), hcp: z.boolean() }))
     .mutation(async ({ ctx, input }) => {
       const bet = await ctx.db.bet.findFirst({
         where: { roundId: ctx.round.id, mode: "TEAM" },
@@ -111,15 +111,15 @@ export const teamRouter = createTRPCRouter({
           ? (bet.config as Record<string, unknown>)
           : {};
       const key = pairKey(input.teamA, input.teamB);
-      const current = Array.isArray(prev.offPairs)
-        ? (prev.offPairs as unknown[]).filter((x): x is string => typeof x === "string")
+      const current = Array.isArray(prev.noHcpPairs)
+        ? (prev.noHcpPairs as unknown[]).filter((x): x is string => typeof x === "string")
         : [];
-      const offPairs = input.played
+      const noHcpPairs = input.hcp
         ? current.filter((k) => k !== key)
         : [...new Set([...current, key])];
       await ctx.db.bet.update({
         where: { id: bet.id },
-        data: { config: { ...(prev as object), offPairs } },
+        data: { config: { ...(prev as object), noHcpPairs } },
       });
       await touchRound(ctx.db, ctx.round.id);
       return { ok: true as const };

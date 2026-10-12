@@ -109,32 +109,49 @@ describe("Best N (1 / 1-2 / 1-2-3)", () => {
   });
 });
 
-describe("offPairs — คู่ทีมที่ไม่เล่นกัน", () => {
+describe("noHcpPairs — คู่ทีมที่ไม่ต่อกัน (เทียบ gross)", () => {
   const P4: Hole[] = [{ par: 4, turbo: false }];
-  // A {3,5}  B {4,5}  C {4,6}
-  const sc: Scores = { a1: [3], a2: [5], b1: [4], b2: [5], c1: [4], c2: [6] };
+  // T1 {a1 ต่อ 0.5, b1 0} · T2 {0,0} · T3 {a3 ต่อ 0.5, b3 0}
   const t3: Team[] = [
-    { id: "A", players: [pl("a1"), pl("a2")] },
-    { id: "B", players: [pl("b1"), pl("b2")] },
-    { id: "C", players: [pl("c1"), pl("c2")] },
+    { id: "T1", players: [pl("a1", { 4: 0.5 }), pl("b1")] },
+    { id: "T2", players: [pl("a2"), pl("b2")] },
+    { id: "T3", players: [pl("a3", { 4: 0.5 }), pl("b3")] },
   ];
+  const sc: Scores = { a1: [4], b1: [5], a2: [4], b2: [5], a3: [4], b3: [4] };
 
-  it("all pairs (round-robin) by default", () => {
-    // A–B: B1 birdie 2, B2 tie → A+2 · A–C: 2 + 1 → A+3 · B–C: tie, 5v6 → B+1
+  it("handicap on every pair (default)", () => {
+    // 1v2: 4.5v4 T2+1, 5v5 tie · 2v3: 4v4 tie, 5v4.5 T3+1 · 1v3: 4.5v4 T3+1, 5v4.5 T3+1
     const r = computeTeam(t3, P4, sc);
-    expect(r.totals).toEqual({ A: 5, B: -1, C: -4 });
+    expect(r.totals).toEqual({ T1: -3, T2: 0, T3: 3 });
   });
 
-  it("A–C off → only A–B and B–C count", () => {
-    const r = computeTeam(t3, P4, sc, { offPairs: [pairKey("C", "A")] });
-    expect(r.totals).toEqual({ A: 2, B: -1, C: -1 });
-    expect(m(r, "C", "A")).toBe(0);
-    expect(r.holeLog[0]!.games.some((g) => [g.teamA, g.teamB].sort().join() === "A,C")).toBe(false);
-    expect(sum(r.totals)).toBe(0);
+  it("T1–T3 ไม่ต่อ → that pair compares gross; other pairs keep handicap", () => {
+    // 1v3 gross: T1 [4,5] v T3 [4,4] → B1 tie, B2 5v4 T3+1
+    const r = computeTeam(t3, P4, sc, { noHcpPairs: [pairKey("T3", "T1")] });
+    expect(r.totals).toEqual({ T1: -2, T2: 0, T3: 2 });
+    expect(m(r, "T1", "T3")).toBe(1);
+    expect(m(r, "T1", "T2")).toBe(1);
+    const g13 = r.holeLog[0]!.games.filter((g) => [g.teamA, g.teamB].sort().join() === "T1,T3");
+    expect(g13.every((g) => !g.hcp)).toBe(true);
+    expect(g13[0]!.netA).toBe(4); // a1 gross, not 4.5
+  });
+
+  it("ranking inside the team follows gross for a no-handicap pair", () => {
+    // T1: a1 ต่อ 2 (g3 → net 5), b1 g4 → with hcp Best1=b1; gross Best1=a1 (Birdie)
+    const t: Team[] = [
+      { id: "T1", players: [pl("a1", { 4: 2 }), pl("b1")] },
+      { id: "T2", players: [pl("a2"), pl("b2")] },
+    ];
+    const s2: Scores = { a1: [3], b1: [4], a2: [4], b2: [5] };
+    const withHcp = computeTeam(t, P4, s2);
+    const gross = computeTeam(t, P4, s2, { noHcpPairs: [pairKey("T1", "T2")] });
+    // hcp: T1 [b1 4, a1 5] v T2 [4,5] → tie, tie → 0
+    expect(withHcp.totals).toEqual({ T1: 0, T2: 0 });
+    // gross: T1 [a1 3, b1 4] v T2 [4,5] → B1 Birdie ×2, B2 1 → T1 +3
+    expect(gross.totals).toEqual({ T1: 3, T2: -3 });
   });
 
   it("pairKey is order-independent", () => {
     expect(pairKey("A", "C")).toBe(pairKey("C", "A"));
   });
 });
-

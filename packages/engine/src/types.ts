@@ -71,6 +71,8 @@ export interface GameLog {
   bonus: string | null;
   bonusMult: number;
   turbo: boolean;
+  /** false = this team pair compared gross (ไม่ต่อกัน); netA/netB are gross */
+  hcp: boolean;
 }
 
 export interface HoleLog {

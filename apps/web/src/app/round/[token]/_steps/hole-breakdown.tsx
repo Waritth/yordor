@@ -17,6 +17,7 @@ interface BdGame {
   bonus: string | null;
   bonusMult: number;
   turbo: boolean;
+  hcp?: boolean;
 }
 export interface BdDetail {
   par: number;
@@ -53,6 +54,7 @@ export function HoleBreakdown({
     gross: number | null,
     win: boolean,
     align: "left" | "right",
+    hcp = true,
   ) => (
     <span
       className={cx(
@@ -68,8 +70,16 @@ export function HoleBreakdown({
         {player ? ` · ${player}` : ""}
       </span>
       <span className="text-black/40">
-        net <b className="text-black/70">{fmt(net)}</b>
-        {gross != null ? ` · ตี ${gross}` : ""}
+        {hcp ? (
+          <>
+            net <b className="text-black/70">{fmt(net)}</b>
+            {gross != null ? ` · ตี ${gross}` : ""}
+          </>
+        ) : (
+          <>
+            ตี <b className="text-black/70">{fmt(gross)}</b>
+          </>
+        )}
       </span>
     </span>
   );
@@ -88,9 +98,16 @@ export function HoleBreakdown({
     return (
       <div key={i} className="rounded-lg bg-black/[0.03] p-2">
         <div className="flex items-start justify-between gap-2 text-[11px]">
-          {side(g.teamA, g.nameA, g.netA, g.grossA, aWin, "left")}
-          <span className="shrink-0 px-1 pt-0.5 text-black/40">{verdict}</span>
-          {side(g.teamB, g.nameB, g.netB, g.grossB, bWin, "right")}
+          {side(g.teamA, g.nameA, g.netA, g.grossA, aWin, "left", g.hcp !== false)}
+          <span className="flex shrink-0 flex-col items-center px-1 pt-0.5 text-black/40">
+            {verdict}
+            {g.hcp === false && (
+              <span className="mt-0.5 rounded bg-[#C9A227]/15 px-1 text-[10px] text-[#9a7d1f]">
+                ไม่ต่อ
+              </span>
+            )}
+          </span>
+          {side(g.teamB, g.nameB, g.netB, g.grossB, bWin, "right", g.hcp !== false)}
         </div>
         {g.pts > 0 && g.winner && (
           <div className="mt-1 text-right text-[11px] text-black/50">

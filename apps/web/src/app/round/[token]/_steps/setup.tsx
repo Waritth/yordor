@@ -5,7 +5,7 @@ import { api } from "~/trpc/react";
 
 import { pairKey } from "@yordor/engine";
 
-import { betBestN, betOffPairs } from "~/lib/team-input";
+import { betBestN, betNoHcpPairs } from "~/lib/team-input";
 
 import type { RoundData } from "../round-flow";
 import { RunnersCard } from "./runners-card";
@@ -39,7 +39,7 @@ export function SetupStep({
     },
   });
 
-  const setPairPlayed = api.team.setPairPlayed.useMutation({
+  const setPairHcp = api.team.setPairHcp.useMutation({
     onSuccess: () => {
       void invalidate();
       void utils.result.get.invalidate({ token });
@@ -48,7 +48,7 @@ export function SetupStep({
 
   const bet = round.bets.find((b) => b.mode === "TEAM");
   const teams = bet?.teams ?? [];
-  const offPairs = new Set(bet ? betOffPairs(bet) : []);
+  const noHcpPairs = new Set(bet ? betNoHcpPairs(bet) : []);
   const pairs = teams.flatMap((a, i) => teams.slice(i + 1).map((b) => [a, b] as const));
   const memberOf = new Map<string, string | null>();
   for (const bp of bet?.players ?? []) memberOf.set(bp.playerId, bp.teamId);
@@ -135,33 +135,30 @@ export function SetupStep({
         {teams.length >= 3 && (
           <Card className="space-y-1.5">
             <p className="text-xs text-black/50">
-              คู่ที่เล่นกัน — แตะเพื่อปิดคู่ที่ไม่ต่อกัน
+              แต้มต่อระหว่างทีม — คู่ที่ “ไม่ต่อ” เทียบสกอร์จริง (gross) ไม่บวกต่อ
             </p>
             {pairs.map(([a, b]) => {
-              const played = !offPairs.has(pairKey(a.id, b.id));
+              const hcp = !noHcpPairs.has(pairKey(a.id, b.id));
               return (
                 <button
                   key={`${a.id}-${b.id}`}
                   onClick={() =>
-                    setPairPlayed.mutate({ token, teamA: a.id, teamB: b.id, played: !played })
+                    setPairHcp.mutate({ token, teamA: a.id, teamB: b.id, hcp: !hcp })
                   }
-                  className={cx(
-                    "flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-sm",
-                    played ? "bg-black/[0.03]" : "bg-transparent opacity-50",
-                  )}
+                  className="flex w-full items-center gap-2 rounded-lg bg-black/[0.03] px-3 py-1.5 text-sm"
                 >
                   <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: a.color }} />
-                  <span className={cx("font-semibold", !played && "line-through")}>{a.name}</span>
+                  <span className="font-semibold">{a.name}</span>
                   <span className="text-black/30">⚔</span>
                   <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: b.color }} />
-                  <span className={cx("font-semibold", !played && "line-through")}>{b.name}</span>
+                  <span className="font-semibold">{b.name}</span>
                   <span
                     className={cx(
                       "ml-auto rounded-full px-2 py-0.5 text-[11px] font-semibold",
-                      played ? "bg-[#1B5E20] text-white" : "bg-black/10 text-black/50",
+                      hcp ? "bg-[#1B5E20] text-white" : "bg-[#C9A227] text-white",
                     )}
                   >
-                    {played ? "เล่น" : "ไม่เล่น"}
+                    {hcp ? "ต่อ" : "ไม่ต่อ"}
                   </span>
                 </button>
               );
